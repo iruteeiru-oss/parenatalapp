@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642018801492",
+    "project_id": "guardian-monitor-26577",
+    "storage_bucket": "guardian-monitor-26577.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642018801492:android:fec59c56b8ba72d6d6bac1",
+        "android_client_info": {
+          "package_name": "com.device.guardian.service"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp3dpyfxKdTttRDi_DqINjPvAP2mBtMqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

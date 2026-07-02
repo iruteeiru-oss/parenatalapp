@@ -1,0 +1,10 @@
+<!-- res/values/strings.xml -->
+<resources>
+    <string name="app_name">Device Guardian</string>
+    <string name="accessibility_description">
+        Helps monitor device activity for child safety
+    </string>
+    <string name="accessibility_summary">
+        System accessibility monitoring service
+    </string>
+</resources>
