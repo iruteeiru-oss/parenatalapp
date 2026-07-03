@@ -2,6 +2,7 @@ package com.device.guardian.service.service.extractor
 
 import android.view.accessibility.AccessibilityNodeInfo
 
+@Suppress("DEPRECATION")
 class MessageExtractor {
 
     data class RawMessage(

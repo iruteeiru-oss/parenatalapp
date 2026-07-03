@@ -56,12 +56,12 @@ class SetupActivity : AppCompatActivity() {
         // Step 1 — Save Parent ID
         binding.btnSaveParentId.setOnClickListener {
             val id = binding.etParentId.text.toString().trim()
-            if (id.length >= 6) {
+            if (id.length >= 4) {
                 prefs.parentId = id
                 Toast.makeText(this, "Parent ID Saved", Toast.LENGTH_SHORT).show()
                 refreshAllStatuses()
             } else {
-                binding.etParentId.error = "Invalid Parent ID"
+                binding.etParentId.error = "Must be at least 4 chars"
             }
         }
 

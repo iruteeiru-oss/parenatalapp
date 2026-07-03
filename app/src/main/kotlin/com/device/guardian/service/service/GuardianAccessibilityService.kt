@@ -24,6 +24,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.Collections
 import java.util.UUID
 
+@Suppress("DEPRECATION")
 class GuardianAccessibilityService : AccessibilityService() {
 
     private lateinit var db: AppDatabase
