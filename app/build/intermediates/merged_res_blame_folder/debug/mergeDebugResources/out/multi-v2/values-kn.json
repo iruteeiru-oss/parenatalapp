@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\DELL\\.gradle\\caches\\transforms-4\\72c38e5dd7e64660360483c3e152a470\\transformed\\jetified-play-services-base-18.0.1\\res\\values-kn\\values.xml",
+                    "source": "C:\\Users\\DELL\\.gradle\\caches\\transforms-4\\71792d9e1764998fe6b1897d15dba9c4\\transformed\\jetified-play-services-base-18.3.0\\res\\values-kn\\values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -35,6 +35,23 @@
                         "startOffsets": "4582,4693,4863,4996,5111,5254,5383,5491,5736,5886,5999,6164,6299,6444,6601,6670,6733",
                         "endColumns": "110,169,132,114,142,128,107,98,149,112,164,134,144,156,68,62,84",
                         "endOffsets": "4688,4858,4991,5106,5249,5378,5486,5585,5881,5994,6159,6294,6439,6596,6665,6728,6813"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\DELL\\.gradle\\caches\\transforms-4\\7b82c29a0340ed069ced09b2d2bcfc1d\\transformed\\jetified-play-services-basement-18.3.0\\res\\values-kn\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "141",
+                        "endOffsets": "336"
+                    },
+                    "to": {
+                        "startLines": "56",
+                        "startColumns": "4",
+                        "startOffsets": "5590",
+                        "endColumns": "145",
+                        "endOffsets": "5731"
                     }
                 },
                 {
@@ -69,23 +86,6 @@
                         "startOffsets": "6818,7089,7189,7305",
                         "endColumns": "113,99,115,100",
                         "endOffsets": "6927,7184,7300,7401"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\DELL\\.gradle\\caches\\transforms-4\\e12411c695f74de82784a4e6da05df03\\transformed\\jetified-play-services-basement-18.1.0\\res\\values-kn\\values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "141",
-                        "endOffsets": "336"
-                    },
-                    "to": {
-                        "startLines": "56",
-                        "startColumns": "4",
-                        "startOffsets": "5590",
-                        "endColumns": "145",
-                        "endOffsets": "5731"
                     }
                 },
                 {

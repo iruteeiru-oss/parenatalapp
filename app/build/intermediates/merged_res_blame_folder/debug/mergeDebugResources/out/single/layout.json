@@ -1,42 +1,34 @@
 [
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\activity_setup.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_setup.xml"
-    },
-    {
         "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/activity_setup.xml",
         "source": "com.device.guardian.service.app-main-55:/layout/activity_setup.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\item_alert.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\item_alert.xml"
-    },
-    {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\activity_login.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_login.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/activity_main.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_main.xml"
     },
     {
         "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/activity_dashboard.xml",
         "source": "com.device.guardian.service.app-main-55:/layout/activity_dashboard.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\item_message.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\item_message.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/fragment_messages.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/fragment_messages.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\activity_dashboard.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_dashboard.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/activity_login.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_login.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\fragment_alerts.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_alerts.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/item_alert.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/item_alert.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\fragment_messages.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_messages.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/fragment_alerts.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/fragment_alerts.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-mergeDebugResources-52:\\layout\\activity_main.xml",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_main.xml"
+        "merged": "com.device.guardian.service.app-mergeDebugResources-52:/layout/item_message.xml",
+        "source": "com.device.guardian.service.app-main-55:/layout/item_message.xml"
     }
 ]

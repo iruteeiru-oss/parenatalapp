@@ -2026,6 +2026,9 @@ color secondary_text_default_material_dark
 color secondary_text_default_material_light
 color secondary_text_disabled_material_dark
 color secondary_text_disabled_material_light
+color status_error
+color status_pending
+color status_success
 color switch_thumb_disabled_material_dark
 color switch_thumb_disabled_material_light
 color switch_thumb_material_dark
@@ -3149,6 +3152,7 @@ id browser_actions_menu_view
 id btnBatteryOptimization
 id btnEnableAccessibility
 id btnEnableLocation
+id btnEnableNotification
 id btnGenerateCode
 id btnLogin
 id btnSaveParentId
@@ -3161,6 +3165,7 @@ id cardBattery
 id cardChildMode
 id cardDeviceStatus
 id cardLocation
+id cardNotification
 id cardParentId
 id cardParentMode
 id cardStatus
@@ -3546,6 +3551,7 @@ id tvStep1Status
 id tvStep2Status
 id tvStep3Status
 id tvStep4Status
+id tvStep5Status
 id tvTime
 id unchecked
 id uniform

@@ -4,6 +4,9 @@ color black
 color purple_200
 color purple_500
 color purple_700
+color status_error
+color status_pending
+color status_success
 color teal_200
 color teal_700
 color white
@@ -18,6 +21,7 @@ id appBar
 id btnBatteryOptimization
 id btnEnableAccessibility
 id btnEnableLocation
+id btnEnableNotification
 id btnGenerateCode
 id btnLogin
 id btnSaveParentId
@@ -28,6 +32,7 @@ id cardBattery
 id cardChildMode
 id cardDeviceStatus
 id cardLocation
+id cardNotification
 id cardParentId
 id cardParentMode
 id cardStatus
@@ -66,6 +71,7 @@ id tvStep1Status
 id tvStep2Status
 id tvStep3Status
 id tvStep4Status
+id tvStep5Status
 id tvTime
 id viewPager
 layout activity_dashboard

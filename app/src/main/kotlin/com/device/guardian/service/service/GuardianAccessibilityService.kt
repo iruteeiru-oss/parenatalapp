@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.location.LocationManager
+import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
@@ -20,6 +20,7 @@ import com.device.guardian.service.data.remote.FirebaseRepository
 import com.device.guardian.service.service.extractor.MessageExtractor
 import com.device.guardian.service.service.filter.MessageFilter
 import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 import java.util.Collections
 import java.util.UUID
 
@@ -182,12 +183,10 @@ class GuardianAccessibilityService : AccessibilityService() {
         try {
             if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-                val location = kotlinx.coroutines.tasks.await(
-                    fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                )
-                location?.let {
-                    lat = it.latitude
-                    lon = it.longitude
+                val location: Location? = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+                location?.let { loc ->
+                    lat = loc.latitude
+                    lon = loc.longitude
                 }
             }
         } catch (e: SecurityException) {
