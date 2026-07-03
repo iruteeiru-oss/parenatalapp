@@ -4,6 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import com.device.guardian.service.worker.SyncWorker
+import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -11,9 +16,16 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED,
             "android.intent.action.QUICKBOOT_POWERON",
             "com.htc.intent.action.QUICKBOOT_POWERON" -> {
-                // Accessibility service auto-restarts after boot
-                // if permission was granted — no manual start needed
-                Log.d("BootReceiver", "Boot complete — accessibility service will resume")
+                Log.d("BootReceiver", "Boot complete — scheduling SyncWorker")
+                
+                val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+                    .build()
+                    
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    "GuardianSyncWork",
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    syncRequest
+                )
             }
         }
     }

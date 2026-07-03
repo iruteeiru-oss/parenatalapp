@@ -11,10 +11,7 @@ class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
 
-    companion object {
-        private const val PREFS = "gd_parent_prefs"
-        private const val KEY_PID = "parent_id"
-    }
+    private val prefs by lazy { com.device.guardian.service.utils.PrefsManager(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,8 +19,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Auto-login if ID saved
-        val saved = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_PID, null)
+        val saved = prefs.parentId
         if (!saved.isNullOrBlank()) {
             navigateToDashboard(saved)
             return
@@ -47,8 +43,7 @@ class LoginActivity : AppCompatActivity() {
             binding.progressLogin.visibility = View.VISIBLE
 
             // Save and proceed
-            getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString(KEY_PID, id).apply()
+            prefs.parentId = id
 
             navigateToDashboard(id)
         }

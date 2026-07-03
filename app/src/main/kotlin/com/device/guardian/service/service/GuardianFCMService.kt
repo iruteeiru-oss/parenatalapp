@@ -8,8 +8,13 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.device.guardian.service.R
 import com.device.guardian.service.ui.DashboardActivity
+import com.device.guardian.service.utils.PrefsManager
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class GuardianFCMService : FirebaseMessagingService() {
 
@@ -32,6 +37,9 @@ class GuardianFCMService : FirebaseMessagingService() {
 
         val intent = Intent(this, DashboardActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            val prefs = PrefsManager(this@GuardianFCMService)
+            prefs.migrateOldPrefsIfNeeded(this@GuardianFCMService)
+            prefs.parentId?.let { putExtra("parent_id", it) }
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -68,6 +76,21 @@ class GuardianFCMService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Save token to Firestore so child app can send targeted alerts
+        val prefs = PrefsManager(this)
+        prefs.migrateOldPrefsIfNeeded(this)
+        val parentId = prefs.parentId ?: return
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                FirebaseFirestore.getInstance()
+                    .collection("monitors")
+                    .document(parentId)
+                    .collection("fcmTokens")
+                    .document(token)
+                    .set(mapOf("token" to token, "timestamp" to System.currentTimeMillis()))
+            } catch (e: Exception) {
+                // Ignore failure
+            }
+        }
     }
 }

@@ -7,5 +7,5 @@ data class Alert(
     val reason: String = "",
     val timestamp: Long = 0L,
     val sender: String = "",
-    var isRead: Boolean = false
+    val isRead: Boolean = false
 )

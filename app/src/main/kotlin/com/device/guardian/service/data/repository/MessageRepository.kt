@@ -163,7 +163,8 @@ class MessageRepository(private val parentId: String) {
                         isGroupChat = doc.getBoolean("isGroupChat") ?: false,
                         isOutgoing  = doc.getBoolean("isOutgoing") ?: false,
                         isFlagged   = doc.getBoolean("isFlagged") ?: false,
-                        flagReason  = doc.getString("flagReason")
+                        flagReason  = doc.getString("flagReason"),
+                        platform    = doc.getString("platform") ?: "whatsapp"
                     )
                 }
         } catch (e: Exception) {

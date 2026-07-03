@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.device.guardian.service"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.device.guardian.service"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -59,6 +59,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-service:2.7.0")

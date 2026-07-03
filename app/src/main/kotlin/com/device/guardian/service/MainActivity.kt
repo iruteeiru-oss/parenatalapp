@@ -13,8 +13,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     companion object {
-        private const val PREFS_NAME = "gd_role_prefs"
-        private const val KEY_ROLE = "role"
         private const val ROLE_PARENT = "parent"
         private const val ROLE_CHILD = "child"
     }
@@ -22,8 +20,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val savedRole = prefs.getString(KEY_ROLE, null)
+        val prefs = com.device.guardian.service.utils.PrefsManager(this)
+        prefs.migrateOldPrefsIfNeeded(this)
+        val savedRole = prefs.role
 
         if (savedRole != null) {
             when (savedRole) {
@@ -44,13 +43,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.cardParentMode.setOnClickListener {
-            prefs.edit().putString(KEY_ROLE, ROLE_PARENT).apply()
+            prefs.role = ROLE_PARENT
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
 
         binding.cardChildMode.setOnClickListener {
-            prefs.edit().putString(KEY_ROLE, ROLE_CHILD).apply()
+            prefs.role = ROLE_CHILD
             startActivity(Intent(this, SetupActivity::class.java))
             finish()
         }

@@ -2,6 +2,7 @@ package com.device.guardian.service.ui
 
 import android.os.Bundle
 import androidx.activity.viewModels
+import com.device.guardian.service.R
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -47,13 +48,16 @@ class DashboardActivity : AppCompatActivity() {
         val pagerAdapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = 2
             override fun createFragment(position: Int): Fragment = when (position) {
-                0 -> MessagesFragment()
-                1 -> AlertsFragment()
-                else -> MessagesFragment()
+                0 -> Fragment.instantiate(this@DashboardActivity, MessagesFragment::class.java.name)
+                1 -> Fragment.instantiate(this@DashboardActivity, AlertsFragment::class.java.name)
+                else -> Fragment.instantiate(this@DashboardActivity, MessagesFragment::class.java.name)
             }
         }
 
-        binding.viewPager.adapter = pagerAdapter
+        binding.viewPager.apply {
+            adapter = pagerAdapter
+            offscreenPageLimit = 1
+        }
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
             tab.text = when (position) {
@@ -110,10 +114,20 @@ class DashboardActivity : AppCompatActivity() {
             viewModel.deviceStatus.collectLatest { status ->
                 if (status != null) {
                     // 1. Network Connectivity Status
-                    binding.tvStatusNetwork.text = if (status.isOnline) "📶 Online" else "⚠️ Offline"
-                    binding.tvStatusNetwork.setTextColor(
-                        getColor(if (status.isOnline) android.R.color.holo_green_dark else android.R.color.holo_red_dark)
-                    )
+                    val now = System.currentTimeMillis()
+                    val isRecent = (now - status.timestamp) < 15 * 60 * 1000L // 15 mins
+                    val effectivelyOnline = status.isOnline && isRecent
+                    
+                    if (effectivelyOnline) {
+                        binding.tvStatusNetwork.text = "📶 Online"
+                        binding.tvStatusNetwork.setTextColor(getColor(R.color.status_success))
+                    } else {
+                        val timeAgo = android.text.format.DateUtils.getRelativeTimeSpanString(
+                            status.timestamp, now, android.text.format.DateUtils.MINUTE_IN_MILLIS
+                        )
+                        binding.tvStatusNetwork.text = "⚠️ Offline ($timeAgo)"
+                        binding.tvStatusNetwork.setTextColor(getColor(R.color.status_error))
+                    }
 
                     // 2. Battery Percentage & State
                     val chargingText = if (status.isCharging) " (Charging)" else ""
@@ -123,15 +137,21 @@ class DashboardActivity : AppCompatActivity() {
                     // 3. Last Known Coordinates Button
                     val lat = status.latitude
                     val lon = status.longitude
+                    binding.btnShowLocation.visibility = View.VISIBLE
                     if (lat != null && lon != null) {
-                        binding.btnShowLocation.visibility = View.VISIBLE
+                        binding.btnShowLocation.text = "📍 Show on Map"
+                        binding.btnShowLocation.setTextColor(getColor(android.R.color.holo_blue_dark))
+                        binding.btnShowLocation.isEnabled = true
                         binding.btnShowLocation.setOnClickListener {
                             val uri = "https://www.google.com/maps/search/?api=1&query=$lat,$lon"
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
                             startActivity(intent)
                         }
                     } else {
-                        binding.btnShowLocation.visibility = View.GONE
+                        binding.btnShowLocation.text = "📍 Loc Unavailable"
+                        binding.btnShowLocation.setTextColor(getColor(android.R.color.darker_gray))
+                        binding.btnShowLocation.isEnabled = false
+                        binding.btnShowLocation.setOnClickListener(null)
                     }
                 } else {
                     binding.tvStatusNetwork.text = "📶 Connectivity: --"

@@ -18,7 +18,10 @@ class MessagesFragment : Fragment() {
 
     private var _binding: FragmentMessagesBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: DashboardViewModel by activityViewModels()
+    private val viewModel: DashboardViewModel by activityViewModels {
+        val parentId = requireActivity().intent.getStringExtra("parent_id") ?: "default_parent"
+        DashboardViewModel.Factory(com.device.guardian.service.data.repository.MessageRepository(parentId))
+    }
     private val adapter = MessageAdapter()
 
     override fun onCreateView(

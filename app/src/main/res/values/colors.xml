@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Status Colors -->
+    <color name="status_success">#388E3C</color>
+    <color name="status_pending">#757575</color>
+    <color name="status_error">#D32F2F</color>
 </resources>
