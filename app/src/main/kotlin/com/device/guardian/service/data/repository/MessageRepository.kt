@@ -2,6 +2,7 @@ package com.device.guardian.service.data.repository
 
 import android.util.Log
 import com.device.guardian.service.data.model.Alert
+import com.device.guardian.service.data.model.DeviceStatus
 import com.device.guardian.service.data.model.Message
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -90,6 +91,41 @@ class MessageRepository(private val parentId: String) {
                 } ?: emptyList()
 
                 trySend(alerts)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    // ── Real-time status stream ─────────────────────────────────────────────────
+
+    fun observeDeviceStatus(): Flow<DeviceStatus?> = callbackFlow {
+        val listener = db.collection("monitors")
+            .document(parentId)
+            .collection("status")
+            .document("device")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(tag, "Status listen error", error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    val status = try {
+                        DeviceStatus(
+                            batteryLevel = snapshot.getLong("batteryLevel")?.toInt() ?: -1,
+                            isCharging   = snapshot.getBoolean("isCharging") ?: false,
+                            isOnline     = snapshot.getBoolean("isOnline") ?: false,
+                            latitude     = snapshot.getDouble("latitude"),
+                            longitude    = snapshot.getDouble("longitude"),
+                            timestamp    = snapshot.getLong("timestamp") ?: 0L
+                        )
+                    } catch (e: Exception) {
+                        Log.w(tag, "Failed to parse status", e)
+                        null
+                    }
+                    trySend(status)
+                } else {
+                    trySend(null)
+                }
             }
 
         awaitClose { listener.remove() }

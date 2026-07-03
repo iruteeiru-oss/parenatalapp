@@ -13,6 +13,9 @@ import com.device.guardian.service.ui.viewmodel.DashboardViewModel
 import com.google.android.material.tabs.TabLayoutMediator
 import androidx.lifecycle.lifecycleScope
 import com.device.guardian.service.data.model.FilterState
+import android.view.View
+import android.net.Uri
+import android.content.Intent
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -37,6 +40,7 @@ class DashboardActivity : AppCompatActivity() {
         setupFilters()
         setupSearch()
         observeAlertBadge()
+        observeDeviceStatus()
     }
 
     private fun setupTabs() {
@@ -98,6 +102,44 @@ class DashboardActivity : AppCompatActivity() {
 
         binding.fabAlerts.setOnClickListener {
             binding.viewPager.currentItem = 1  // Switch to alerts tab
+        }
+    }
+
+    private fun observeDeviceStatus() {
+        lifecycleScope.launch {
+            viewModel.deviceStatus.collectLatest { status ->
+                if (status != null) {
+                    // 1. Network Connectivity Status
+                    binding.tvStatusNetwork.text = if (status.isOnline) "📶 Online" else "⚠️ Offline"
+                    binding.tvStatusNetwork.setTextColor(
+                        getColor(if (status.isOnline) android.R.color.holo_green_dark else android.R.color.holo_red_dark)
+                    )
+
+                    // 2. Battery Percentage & State
+                    val chargingText = if (status.isCharging) " (Charging)" else ""
+                    val batteryVal = if (status.batteryLevel >= 0) "${status.batteryLevel}%" else "Unknown"
+                    binding.tvStatusBattery.text = "🔋 Battery: $batteryVal$chargingText"
+
+                    // 3. Last Known Coordinates Button
+                    val lat = status.latitude
+                    val lon = status.longitude
+                    if (lat != null && lon != null) {
+                        binding.btnShowLocation.visibility = View.VISIBLE
+                        binding.btnShowLocation.setOnClickListener {
+                            val uri = "https://www.google.com/maps/search/?api=1&query=$lat,$lon"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                            startActivity(intent)
+                        }
+                    } else {
+                        binding.btnShowLocation.visibility = View.GONE
+                    }
+                } else {
+                    binding.tvStatusNetwork.text = "📶 Connectivity: --"
+                    binding.tvStatusNetwork.setTextColor(getColor(android.R.color.darker_gray))
+                    binding.tvStatusBattery.text = "🔋 Battery: --"
+                    binding.btnShowLocation.visibility = View.GONE
+                }
+            }
         }
     }
 }

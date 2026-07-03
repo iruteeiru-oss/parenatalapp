@@ -9,52 +9,83 @@ import kotlinx.coroutines.tasks.await
 
 class FirebaseRepository(
     private val dao: MessageDao,
-    private val parentId: String
+    private val context: android.content.Context
 ) {
     private val tag = "FirebaseRepo"
     private val db = FirebaseFirestore.getInstance()
+
+    private fun getParentId(): String {
+        return context.getSharedPreferences("gd_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("pid", "default_parent") ?: "default_parent"
+    }
 
     suspend fun syncPending() {
         val unsynced = dao.getUnsynced()
         if (unsynced.isEmpty()) return
 
+        val parentId = getParentId()
         unsynced.forEach { entity ->
             try {
-                db.collection("monitors")
+                val batch = db.batch()
+                
+                val msgRef = db.collection("monitors")
                     .document(parentId)
                     .collection("messages")
                     .document(entity.id)
-                    .set(entity.toMap(), SetOptions.merge())
-                    .await()
-
-                dao.markSynced(entity.id)
+                batch.set(msgRef, entity.toMap(), SetOptions.merge())
 
                 if (entity.isFlagged) {
-                    pushAlert(entity)
+                    val alertRef = db.collection("monitors")
+                        .document(parentId)
+                        .collection("alerts")
+                        .document(entity.id)
+                    batch.set(alertRef, mapOf(
+                        "messageId"  to entity.id,
+                        "chatName"   to entity.chatName,
+                        "reason"     to entity.flagReason,
+                        "timestamp"  to entity.timestamp,
+                        "sender"     to entity.sender,
+                        "isRead"     to false
+                    ))
                 }
 
+                batch.commit().await()
+                dao.markSynced(entity.id)
+
             } catch (e: Exception) {
-                Log.w(tag, "Sync failed for ${entity.id} — will retry")
+                Log.w(tag, "Sync failed for ${entity.id} — will retry", e)
             }
         }
     }
 
-    private suspend fun pushAlert(entity: MessageEntity) {
+    suspend fun syncDeviceStatus(
+        batteryLevel: Int,
+        isCharging: Boolean,
+        isOnline: Boolean,
+        latitude: Double?,
+        longitude: Double?
+    ) {
+        val parentId = getParentId()
+        val data = mutableMapOf<String, Any>(
+            "batteryLevel" to batteryLevel,
+            "isCharging"   to isCharging,
+            "isOnline"     to isOnline,
+            "timestamp"    to System.currentTimeMillis()
+        )
+        if (latitude != null && longitude != null) {
+            data["latitude"] = latitude
+            data["longitude"] = longitude
+        }
+
         try {
             db.collection("monitors")
                 .document(parentId)
-                .collection("alerts")
-                .document(entity.id)
-                .set(mapOf(
-                    "messageId"  to entity.id,
-                    "chatName"   to entity.chatName,
-                    "reason"     to entity.flagReason,
-                    "timestamp"  to entity.timestamp,
-                    "sender"     to entity.sender
-                ))
+                .collection("status")
+                .document("device")
+                .set(data, SetOptions.merge())
                 .await()
         } catch (e: Exception) {
-            Log.w(tag, "Alert push failed", e)
+            Log.w(tag, "Failed to sync device status", e)
         }
     }
 

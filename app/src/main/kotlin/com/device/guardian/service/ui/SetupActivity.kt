@@ -18,6 +18,19 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySetupBinding
     private lateinit var prefs: SharedPreferences
 
+    private val requestLocationPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            Toast.makeText(this, "Location permission granted ✓", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+        }
+        refreshAllStatuses()
+    }
+
     companion object {
         private const val PREFS_NAME = "gd_prefs"
         private const val KEY_PARENT_ID = "pid"
@@ -94,6 +107,20 @@ class SetupActivity : AppCompatActivity() {
                 ).show()
             }
         }
+
+        // Step 4 — Request Location Permission
+        binding.btnEnableLocation.setOnClickListener {
+            if (isLocationPermissionGranted()) {
+                Toast.makeText(this, "Permission already granted ✓", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            requestLocationPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
     }
 
     private fun restoreSavedParentId() {
@@ -109,6 +136,7 @@ class SetupActivity : AppCompatActivity() {
         updateStep1Status()
         updateStep2Status()
         updateStep3Status()
+        updateStep4Status()
         updateFinalBanner()
     }
 
@@ -143,10 +171,22 @@ class SetupActivity : AppCompatActivity() {
         binding.btnBatteryOptimization.isEnabled = !optimized
     }
 
+    private fun updateStep4Status() {
+        val granted = isLocationPermissionGranted()
+        binding.tvStep4Status.text = if (granted) "✅ Done" else "⬜ Pending"
+        binding.tvStep4Status.setTextColor(
+            getColor(if (granted) android.R.color.holo_green_dark else android.R.color.darker_gray)
+        )
+        binding.btnEnableLocation.text =
+            if (granted) "Location Configured ✓" else "Grant Location Access"
+        binding.btnEnableLocation.isEnabled = !granted
+    }
+
     private fun updateFinalBanner() {
         val allDone = isParentIdSaved() &&
                       isAccessibilityServiceEnabled() &&
-                      isBatteryOptimizationDisabled()
+                      isBatteryOptimizationDisabled() &&
+                      isLocationPermissionGranted()
 
         if (allDone) {
             binding.tvFinalStatus.text = "✅ Monitoring Active"
@@ -154,7 +194,7 @@ class SetupActivity : AppCompatActivity() {
             binding.cardStatus.setCardBackgroundColor(getColor(android.R.color.holo_green_dark))
         } else {
             binding.tvFinalStatus.text = "⚠ Setup Incomplete"
-            binding.tvFinalSubtext.text = "Complete all 3 steps above"
+            binding.tvFinalSubtext.text = "Complete all 4 steps above"
             binding.cardStatus.setCardBackgroundColor(
                 resources.getColor(android.R.color.black, theme)
             )
@@ -180,5 +220,10 @@ class SetupActivity : AppCompatActivity() {
     private fun isBatteryOptimizationDisabled(): Boolean {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         return pm.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun isLocationPermissionGranted(): Boolean {
+        return checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+               checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 }

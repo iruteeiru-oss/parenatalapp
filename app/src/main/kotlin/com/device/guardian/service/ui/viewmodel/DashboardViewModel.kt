@@ -2,6 +2,7 @@ package com.device.guardian.service.ui.viewmodel
 
 import androidx.lifecycle.*
 import com.device.guardian.service.data.model.Alert
+import com.device.guardian.service.data.model.DeviceStatus
 import com.device.guardian.service.data.model.FilterState
 import com.device.guardian.service.data.model.Message
 import com.device.guardian.service.data.repository.MessageRepository
@@ -17,10 +18,12 @@ class DashboardViewModel(private val repo: MessageRepository) : ViewModel() {
     private val _filter      = MutableStateFlow(FilterState.ALL)
     private val _searchQuery = MutableStateFlow("")
     private val _isLoading   = MutableStateFlow(true)
+    private val _deviceStatus = MutableStateFlow<DeviceStatus?>(null)
 
     // ── Public state ───────────────────────────────────────────────────────────
 
     val isLoading: StateFlow<Boolean> = _isLoading
+    val deviceStatus: StateFlow<DeviceStatus?> = _deviceStatus
     val alerts: StateFlow<List<Alert>> = _alerts
     val unreadAlertCount: StateFlow<Int> = _alerts
         .map { list -> list.count { !it.isRead } }
@@ -67,6 +70,7 @@ class DashboardViewModel(private val repo: MessageRepository) : ViewModel() {
     init {
         observeMessages()
         observeAlerts()
+        observeDeviceStatus()
     }
 
     private fun observeMessages() {
@@ -85,6 +89,14 @@ class DashboardViewModel(private val repo: MessageRepository) : ViewModel() {
             repo.observeAlerts()
                 .catch { emit(emptyList()) }
                 .collect { _alerts.value = it }
+        }
+    }
+
+    private fun observeDeviceStatus() {
+        viewModelScope.launch {
+            repo.observeDeviceStatus()
+                .catch { emit(null) }
+                .collect { _deviceStatus.value = it }
         }
     }
 
