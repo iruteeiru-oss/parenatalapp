@@ -29,6 +29,9 @@ public final class ActivitySetupBinding implements ViewBinding {
   public final Button btnEnableAccessibility;
 
   @NonNull
+  public final Button btnEnableLocation;
+
+  @NonNull
   public final Button btnSaveParentId;
 
   @NonNull
@@ -36,6 +39,9 @@ public final class ActivitySetupBinding implements ViewBinding {
 
   @NonNull
   public final MaterialCardView cardBattery;
+
+  @NonNull
+  public final MaterialCardView cardLocation;
 
   @NonNull
   public final MaterialCardView cardParentId;
@@ -61,19 +67,26 @@ public final class ActivitySetupBinding implements ViewBinding {
   @NonNull
   public final TextView tvStep3Status;
 
+  @NonNull
+  public final TextView tvStep4Status;
+
   private ActivitySetupBinding(@NonNull ScrollView rootView, @NonNull Button btnBatteryOptimization,
-      @NonNull Button btnEnableAccessibility, @NonNull Button btnSaveParentId,
-      @NonNull MaterialCardView cardAccessibility, @NonNull MaterialCardView cardBattery,
+      @NonNull Button btnEnableAccessibility, @NonNull Button btnEnableLocation,
+      @NonNull Button btnSaveParentId, @NonNull MaterialCardView cardAccessibility,
+      @NonNull MaterialCardView cardBattery, @NonNull MaterialCardView cardLocation,
       @NonNull MaterialCardView cardParentId, @NonNull MaterialCardView cardStatus,
       @NonNull EditText etParentId, @NonNull TextView tvFinalStatus,
       @NonNull TextView tvFinalSubtext, @NonNull TextView tvStep1Status,
-      @NonNull TextView tvStep2Status, @NonNull TextView tvStep3Status) {
+      @NonNull TextView tvStep2Status, @NonNull TextView tvStep3Status,
+      @NonNull TextView tvStep4Status) {
     this.rootView = rootView;
     this.btnBatteryOptimization = btnBatteryOptimization;
     this.btnEnableAccessibility = btnEnableAccessibility;
+    this.btnEnableLocation = btnEnableLocation;
     this.btnSaveParentId = btnSaveParentId;
     this.cardAccessibility = cardAccessibility;
     this.cardBattery = cardBattery;
+    this.cardLocation = cardLocation;
     this.cardParentId = cardParentId;
     this.cardStatus = cardStatus;
     this.etParentId = etParentId;
@@ -82,6 +95,7 @@ public final class ActivitySetupBinding implements ViewBinding {
     this.tvStep1Status = tvStep1Status;
     this.tvStep2Status = tvStep2Status;
     this.tvStep3Status = tvStep3Status;
+    this.tvStep4Status = tvStep4Status;
   }
 
   @Override
@@ -123,6 +137,12 @@ public final class ActivitySetupBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btnEnableLocation;
+      Button btnEnableLocation = ViewBindings.findChildViewById(rootView, id);
+      if (btnEnableLocation == null) {
+        break missingId;
+      }
+
       id = R.id.btnSaveParentId;
       Button btnSaveParentId = ViewBindings.findChildViewById(rootView, id);
       if (btnSaveParentId == null) {
@@ -138,6 +158,12 @@ public final class ActivitySetupBinding implements ViewBinding {
       id = R.id.cardBattery;
       MaterialCardView cardBattery = ViewBindings.findChildViewById(rootView, id);
       if (cardBattery == null) {
+        break missingId;
+      }
+
+      id = R.id.cardLocation;
+      MaterialCardView cardLocation = ViewBindings.findChildViewById(rootView, id);
+      if (cardLocation == null) {
         break missingId;
       }
 
@@ -189,10 +215,16 @@ public final class ActivitySetupBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tvStep4Status;
+      TextView tvStep4Status = ViewBindings.findChildViewById(rootView, id);
+      if (tvStep4Status == null) {
+        break missingId;
+      }
+
       return new ActivitySetupBinding((ScrollView) rootView, btnBatteryOptimization,
-          btnEnableAccessibility, btnSaveParentId, cardAccessibility, cardBattery, cardParentId,
-          cardStatus, etParentId, tvFinalStatus, tvFinalSubtext, tvStep1Status, tvStep2Status,
-          tvStep3Status);
+          btnEnableAccessibility, btnEnableLocation, btnSaveParentId, cardAccessibility,
+          cardBattery, cardLocation, cardParentId, cardStatus, etParentId, tvFinalStatus,
+          tvFinalSubtext, tvStep1Status, tvStep2Status, tvStep3Status, tvStep4Status);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
