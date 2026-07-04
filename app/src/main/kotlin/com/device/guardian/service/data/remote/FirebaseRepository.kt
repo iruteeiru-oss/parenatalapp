@@ -15,8 +15,17 @@ class FirebaseRepository(
     private val db = FirebaseFirestore.getInstance()
 
     private fun getParentId(): String {
-        return context.getSharedPreferences("gd_prefs", android.content.Context.MODE_PRIVATE)
-            .getString("pid", "default_parent") ?: "default_parent"
+        // Try the new centralized PrefsManager first
+        val centralPrefs = context.getSharedPreferences("guardian_app_prefs", android.content.Context.MODE_PRIVATE)
+        val centralId = centralPrefs.getString("parent_id", null)
+        if (!centralId.isNullOrBlank()) return centralId
+
+        // Fallback: try the old child prefs for backwards compatibility
+        val oldPrefs = context.getSharedPreferences("gd_prefs", android.content.Context.MODE_PRIVATE)
+        val oldId = oldPrefs.getString("pid", null)
+        if (!oldId.isNullOrBlank()) return oldId
+
+        return "default_parent"
     }
 
     suspend fun syncPending() {

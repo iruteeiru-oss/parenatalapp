@@ -5,7 +5,6 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -29,7 +28,6 @@ class GuardianAccessibilityService : AccessibilityService() {
 
     private lateinit var db: AppDatabase
     private lateinit var firebaseRepo: FirebaseRepository
-    private lateinit var prefs: SharedPreferences
 
     private val extractor = MessageExtractor()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -41,15 +39,11 @@ class GuardianAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "GuardianService"
-        private const val PREFS_NAME = "gd_prefs"
-        private const val KEY_PARENT_ID = "pid"
         private const val SYNC_INTERVAL_MS = 30_000L
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         db = AppDatabase.getInstance(this)
         firebaseRepo = FirebaseRepository(db.messageDao(), this)
@@ -133,6 +127,13 @@ class GuardianAccessibilityService : AccessibilityService() {
             flagReason = filter.reason,
         )
         db.messageDao().insert(entity)
+        
+        // Sync to Firebase immediately so parent sees data in real-time
+        try {
+            firebaseRepo.syncPending()
+        } catch (e: Exception) {
+            Log.w(TAG, "Immediate sync failed, periodic sync will retry: ${e.message}")
+        }
     }
 
     // Periodic sync — catches anything that failed immediate sync

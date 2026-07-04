@@ -79,8 +79,9 @@ class GuardianNotificationService : NotificationListenerService() {
                 db.messageDao().insert(entity)
                 Log.d(TAG, "Saved background message from $sender")
                 
-                // We don't trigger immediate sync here to save battery; 
-                // GuardianAccessibilityService handles periodic sync.
+                // Sync to Firebase immediately
+                val repo = FirebaseRepository(db.messageDao(), this@GuardianNotificationService)
+                repo.syncPending()
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving notification message: ${e.message}")
             }
