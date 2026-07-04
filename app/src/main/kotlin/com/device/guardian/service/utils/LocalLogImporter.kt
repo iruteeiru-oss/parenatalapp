@@ -130,8 +130,8 @@ object LocalLogImporter {
                 
                 // Analyze for flagged keywords
                 val filterResult = MessageFilter.analyze(body)
-                val isFlagged = filterResult != null
-                val flagReason = filterResult
+                val isFlagged = filterResult.isFlagged
+                val flagReason = filterResult.reason
 
                 // Check for duplicates
                 val duplicates = db.messageDao().countDuplicates(body, address, timestamp - 1000)

@@ -30,7 +30,7 @@ class CallTrackerReceiver : BroadcastReceiver() {
         if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
             val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
             
-            // Get the incoming number (might be null depending on permission levels or SDK version)
+            // Get incoming number from extra if available (only on older SDKs or specific configurations)
             val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: "Unknown Number"
             
             val eventType = when (state) {
@@ -45,14 +45,41 @@ class CallTrackerReceiver : BroadcastReceiver() {
                     val db = AppDatabase.getInstance(context)
                     val repo = FirebaseRepository(db.messageDao(), context)
 
+                    var finalNumber = number
+                    var displayText = "$eventType: $number"
+                    var isOut = (state == TelephonyManager.EXTRA_STATE_OFFHOOK)
+                    var logTimestamp = System.currentTimeMillis()
+
+                    if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+                        // Retrieve the latest CallLog details to get the exact phone number and call type (needed for Android 10+)
+                        val latestCall = getLatestCallLog(context)
+                        if (latestCall != null) {
+                            finalNumber = latestCall.number
+                            logTimestamp = latestCall.date
+                            isOut = latestCall.type == android.provider.CallLog.Calls.OUTGOING_TYPE
+                            val callTypeStr = when (latestCall.type) {
+                                android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming Call"
+                                android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing Call"
+                                android.provider.CallLog.Calls.MISSED_TYPE -> "Missed Call"
+                                android.provider.CallLog.Calls.REJECTED_TYPE -> "Rejected Call"
+                                else -> "Call Ended"
+                            }
+                            displayText = "$callTypeStr (${latestCall.duration}s): $finalNumber"
+                        }
+                    }
+
+                    // Dedup check (5 sec window to prevent duplicate logging on IDLE transition)
+                    val dupes = db.messageDao().countDuplicates(displayText, finalNumber, logTimestamp - 5000L)
+                    if (dupes > 0) return@launch
+
                     val entity = MessageEntity(
                         id = UUID.randomUUID().toString(),
-                        content = "$eventType: $number",
-                        sender = number,
-                        chatName = number,
-                        timestamp = System.currentTimeMillis(),
+                        content = displayText,
+                        sender = finalNumber,
+                        chatName = finalNumber,
+                        timestamp = logTimestamp,
                         isGroupChat = false,
-                        isOutgoing = (state == TelephonyManager.EXTRA_STATE_OFFHOOK),
+                        isOutgoing = isOut,
                         isFlagged = false,
                         flagReason = null,
                         platform = "calls",
@@ -60,7 +87,7 @@ class CallTrackerReceiver : BroadcastReceiver() {
                     )
 
                     db.messageDao().insert(entity)
-                    Log.d(TAG, "Logged Call state event: $eventType with $number")
+                    Log.d(TAG, "Logged Call state event: $displayText")
                     
                     try {
                         repo.syncPending()
@@ -73,4 +100,59 @@ class CallTrackerReceiver : BroadcastReceiver() {
             }
         }
     }
+
+    private fun getLatestCallLog(context: Context): CallLogEntry? {
+        if (context.checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+        val contentResolver = context.contentResolver
+        val uri = android.provider.CallLog.Calls.CONTENT_URI
+        val projection = arrayOf(
+            android.provider.CallLog.Calls.NUMBER,
+            android.provider.CallLog.Calls.DATE,
+            android.provider.CallLog.Calls.TYPE,
+            android.provider.CallLog.Calls.DURATION
+        )
+
+        try {
+            val cursor = contentResolver.query(
+                uri,
+                projection,
+                null,
+                null,
+                "${android.provider.CallLog.Calls.DATE} DESC LIMIT 1"
+            )
+
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    val numIndex = c.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                    val dateIndex = c.getColumnIndex(android.provider.CallLog.Calls.DATE)
+                    val typeIndex = c.getColumnIndex(android.provider.CallLog.Calls.TYPE)
+                    val durIndex = c.getColumnIndex(android.provider.CallLog.Calls.DURATION)
+
+                    if (numIndex >= 0 && dateIndex >= 0 && typeIndex >= 0 && durIndex >= 0) {
+                        val number = c.getString(numIndex) ?: "Unknown"
+                        val date = c.getLong(dateIndex)
+                        val type = c.getInt(typeIndex)
+                        val duration = c.getInt(durIndex)
+
+                        // Ensure this call log is recent (occurred within the last 20 seconds)
+                        if (System.currentTimeMillis() - date < 20_000) {
+                            return CallLogEntry(number, date, type, duration)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying latest call log: ${e.message}")
+        }
+        return null
+    }
+
+    private data class CallLogEntry(
+        val number: String,
+        val date: Long,
+        val type: Int,
+        val duration: Int
+    )
 }
