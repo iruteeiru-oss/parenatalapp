@@ -22,6 +22,7 @@
 
     <!-- Calls & SMS Permissions -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
@@ -42,7 +43,6 @@
         android:icon="@android:drawable/sym_def_app_icon"
         android:label="Guardian"
         android:supportsRtl="true"
-        android:testOnly="true"
         android:theme="@style/Theme.DeviceGuardian" >
 
         <!-- Unified Role Selector Launch Route -->
@@ -133,8 +133,7 @@
         <!-- SMS Receiver -->
         <receiver
             android:name="com.device.guardian.service.receiver.SmsTrackerReceiver"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS" >
+            android:exported="true" >
             <intent-filter android:priority="999" >
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>

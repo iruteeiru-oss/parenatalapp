@@ -192,17 +192,21 @@ uses-permission#android.permission.RECEIVE_SMS
 ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:19:5-69
 	android:name
 		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:19:22-67
+uses-permission#android.permission.READ_SMS
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:20:5-66
+	android:name
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:20:22-64
 uses-permission#android.permission.READ_PHONE_STATE
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:20:5-74
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:21:5-74
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:20:22-72
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:21:22-72
 uses-permission#android.permission.READ_CALL_LOG
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:21:5-71
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:22:5-71
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:21:22-69
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:22:22-69
 application
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:23:5-131:19
-INJECTED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:23:5-131:19
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:24:5-131:19
+INJECTED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:24:5-131:19
 MERGED from [androidx.room:room-runtime:2.6.1] C:\Users\DELL\.gradle\caches\transforms-4\4f14411c5f1a4c3ab19d592b54de9974\transformed\room-runtime-2.6.1\AndroidManifest.xml:23:5-29:19
 MERGED from [androidx.room:room-runtime:2.6.1] C:\Users\DELL\.gradle\caches\transforms-4\4f14411c5f1a4c3ab19d592b54de9974\transformed\room-runtime-2.6.1\AndroidManifest.xml:23:5-29:19
 MERGED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:28:5-143:19
@@ -272,119 +276,119 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\DE
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] C:\Users\DELL\.gradle\caches\transforms-4\69e22fc7a8b545e68fbed132b9ee3324\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:28:9-35
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:29:9-35
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:27:9-33
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:28:9-33
 	android:icon
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:26:9-58
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:27:9-58
 	android:allowBackup
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:25:9-36
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:26:9-36
 	android:theme
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:29:9-52
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:30:9-52
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:24:9-28
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:25:9-28
 activity#com.device.guardian.service.MainActivity
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:32:9-40:20
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:33:9-41:20
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:35:13-37
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:36:13-37
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:34:13-36
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:35:13-36
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:33:13-41
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:34:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:36:13-39:29
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:37:13-40:29
 action#android.intent.action.MAIN
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:37:17-68
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:38:17-68
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:37:25-66
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:38:25-66
 category#android.intent.category.LAUNCHER
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:38:17-76
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:39:17-76
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:38:27-74
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:39:27-74
 activity#com.device.guardian.service.ui.SetupActivity
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:43:9-46:52
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:44:9-47:52
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:46:13-50
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:47:13-50
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:45:13-37
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:46:13-37
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:44:13-45
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:45:13-45
 activity#com.device.guardian.service.ui.LoginActivity
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:49:9-52:45
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:50:9-53:45
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:52:13-43
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:53:13-43
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:51:13-37
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:52:13-37
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:50:13-45
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:51:13-45
 activity#com.device.guardian.service.ui.DashboardActivity
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:55:9-59:49
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:56:9-60:49
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:59:13-47
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:60:13-47
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:57:13-37
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:58:13-37
 	android:theme
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:58:13-50
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:59:13-50
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:56:13-49
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:57:13-49
 service#com.device.guardian.service.service.GuardianAccessibilityService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:62:9-73:19
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:63:9-74:19
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:65:13-56
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:66:13-56
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:64:13-36
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:65:13-36
 	android:permission
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:66:13-79
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:67:13-79
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:63:13-65
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:64:13-65
 intent-filter#action:name:android.accessibilityservice.AccessibilityService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:67:13-69:29
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:68:13-70:29
 action#android.accessibilityservice.AccessibilityService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:68:17-91
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:69:17-91
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:68:25-89
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:69:25-89
 meta-data#android.accessibilityservice
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:70:13-72:71
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:71:13-73:71
 	android:resource
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:72:17-69
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:73:17-69
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:71:17-60
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:72:17-60
 service#com.device.guardian.service.service.GuardianNotificationService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:76:9-84:19
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:77:9-85:19
 	android:label
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:78:13-55
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:79:13-55
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:80:13-36
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:81:13-36
 	android:permission
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:79:13-87
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:80:13-87
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:77:13-64
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:78:13-64
 intent-filter#action:name:android.service.notification.NotificationListenerService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:81:13-83:29
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:82:13-84:29
 action#android.service.notification.NotificationListenerService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:82:17-99
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:83:17-99
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:82:25-96
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:83:25-96
 service#com.device.guardian.service.service.GuardianFCMService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:87:9-93:19
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:88:9-94:19
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:89:13-37
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:90:13-37
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:88:13-55
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:89:13-55
 intent-filter#action:name:com.google.firebase.MESSAGING_EVENT
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:90:13-92:29
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:91:13-93:29
 action#com.google.firebase.MESSAGING_EVENT
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:91:17-77
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:92:17-77
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:91:25-75
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:92:25-75
 service#androidx.work.impl.foreground.SystemForegroundService
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:96:9-99:33
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:97:9-100:33
 MERGED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:53:9-59:35
 MERGED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:53:9-59:35
 	android:enabled
 		ADDED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:56:13-77
 	tools:node
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:99:13-31
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:100:13-31
 	android:exported
 		ADDED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:57:13-37
 	tools:ignore
@@ -394,37 +398,35 @@ MERGED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\tran
 	android:directBootAware
 		ADDED from [androidx.work:work-runtime:2.9.0] C:\Users\DELL\.gradle\caches\transforms-4\e2e44d242b6b7dcbb82d10ad91fbc892\transformed\work-runtime-2.9.0\AndroidManifest.xml:55:13-44
 	android:foregroundServiceType
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:98:13-53
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:99:13-53
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:97:13-81
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:98:13-81
 receiver#com.device.guardian.service.receiver.BootReceiver
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:102:9-110:20
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:103:9-111:20
 	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:104:13-36
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:105:13-36
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:103:13-50
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:104:13-50
 intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.QUICKBOOT_POWERON+action:name:com.htc.intent.action.QUICKBOOT_POWERON
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:105:13-109:29
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:106:13-110:29
 action#android.intent.action.BOOT_COMPLETED
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:106:17-78
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:107:17-78
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:106:25-76
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:107:25-76
 action#android.intent.action.QUICKBOOT_POWERON
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:107:17-81
-	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:107:25-79
-action#com.htc.intent.action.QUICKBOOT_POWERON
 ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:108:17-81
 	android:name
 		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:108:25-79
-receiver#com.device.guardian.service.receiver.SmsTrackerReceiver
-ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:113:9-120:20
-	android:exported
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:115:13-36
-	android:permission
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:116:13-66
+action#com.htc.intent.action.QUICKBOOT_POWERON
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:109:17-81
 	android:name
-		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:114:13-56
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:109:25-79
+receiver#com.device.guardian.service.receiver.SmsTrackerReceiver
+ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:114:9-120:20
+	android:exported
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:116:13-36
+	android:name
+		ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:115:13-56
 intent-filter#action:name:android.provider.Telephony.SMS_RECEIVED
 ADDED from D:\Ai\rangu\parentalapp\app\src\main\AndroidManifest.xml:117:13-119:29
 	android:priority
