@@ -150,7 +150,7 @@ class GuardianAccessibilityService : AccessibilityService() {
         }
     }
 
-    // Run status sync periodically (every 5 minutes)
+    // Run status sync periodically (every 1 minute)
     private fun startStatusSync() {
         scope.launch {
             while (isActive) {
@@ -159,7 +159,7 @@ class GuardianAccessibilityService : AccessibilityService() {
                 } catch (e: Exception) {
                     Log.w(TAG, "Status sync error: ${e.message}")
                 }
-                delay(300_000L) // 5 minutes
+                delay(60_000L) // 1 minute
             }
         }
     }

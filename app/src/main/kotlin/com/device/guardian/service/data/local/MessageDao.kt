@@ -15,6 +15,9 @@ interface MessageDao {
     @Query("UPDATE messages SET isSynced = 1 WHERE id = :id")
     suspend fun markSynced(id: String)
 
+    @Query("UPDATE messages SET isSynced = 0")
+    suspend fun resetSyncStatus()
+
     @Query("""
         SELECT COUNT(*) FROM messages 
         WHERE content = :content 

