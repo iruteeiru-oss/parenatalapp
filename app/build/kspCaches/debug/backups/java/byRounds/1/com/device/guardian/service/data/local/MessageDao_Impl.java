@@ -36,6 +36,8 @@ public final class MessageDao_Impl implements MessageDao {
 
   private final SharedSQLiteStatement __preparedStmtOfMarkSynced;
 
+  private final SharedSQLiteStatement __preparedStmtOfResetSyncStatus;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteOlderThan;
 
   public MessageDao_Impl(@NonNull final RoomDatabase __db) {
@@ -75,6 +77,14 @@ public final class MessageDao_Impl implements MessageDao {
       @NonNull
       public String createQuery() {
         final String _query = "UPDATE messages SET isSynced = 1 WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfResetSyncStatus = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE messages SET isSynced = 0";
         return _query;
       }
     };
@@ -126,6 +136,29 @@ public final class MessageDao_Impl implements MessageDao {
           }
         } finally {
           __preparedStmtOfMarkSynced.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object resetSyncStatus(final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfResetSyncStatus.acquire();
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfResetSyncStatus.release(_stmt);
         }
       }
     }, $completion);
