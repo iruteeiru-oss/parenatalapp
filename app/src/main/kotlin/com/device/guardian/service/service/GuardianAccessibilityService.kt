@@ -89,10 +89,11 @@ class GuardianAccessibilityService : AccessibilityService() {
         if (extracted.isEmpty()) return
 
         scope.launch {
-            // Apply sequential millisecond offset to preserve chronological message sequence
-            val now = System.currentTimeMillis()
             extracted.forEachIndexed { index, rawMessage ->
-                val adjustedTimestamp = now - (extracted.size - 1 - index) * 10L
+                // Use the parsed timestamp from the sibling text if available,
+                // and add a minor micro-offset (10ms * index) to preserve screen sequence in DB index order.
+                val baseTime = if (rawMessage.timestamp > 0L) rawMessage.timestamp else System.currentTimeMillis()
+                val adjustedTimestamp = baseTime + index * 10L
                 processMessage(rawMessage, adjustedTimestamp)
             }
         }
@@ -125,6 +126,7 @@ class GuardianAccessibilityService : AccessibilityService() {
             isOutgoing = raw.isOutgoing,
             isFlagged = filter.isFlagged,
             flagReason = filter.reason,
+            platform = "whatsapp"
         )
         db.messageDao().insert(entity)
         

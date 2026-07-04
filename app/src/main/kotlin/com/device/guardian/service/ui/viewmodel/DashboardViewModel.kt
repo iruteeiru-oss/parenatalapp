@@ -48,16 +48,17 @@ class DashboardViewModel(private val repo: MessageRepository) : ViewModel() {
         result
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
-    // Group messages by chat name for the chat list view
+    // Group messages by chat name and platform for the chat list view
     val chatList: StateFlow<List<ChatSummary>> = _allMessages
         .map { messages ->
             messages
-                .groupBy { it.chatName }
-                .map { (chatName, msgs) ->
+                .groupBy { Pair(it.chatName, it.platform) }
+                .map { (key, msgs) ->
                     ChatSummary(
-                        chatName    = chatName,
-                        lastMessage = msgs.first(),
-                        totalCount  = msgs.size,
+                        chatName     = key.first,
+                        platform     = key.second,
+                        lastMessage  = msgs.first(),
+                        totalCount   = msgs.size,
                         flaggedCount = msgs.count { it.isFlagged }
                     )
                 }
@@ -121,6 +122,7 @@ class DashboardViewModel(private val repo: MessageRepository) : ViewModel() {
 
 data class ChatSummary(
     val chatName: String,
+    val platform: String,
     val lastMessage: Message,
     val totalCount: Int,
     val flaggedCount: Int

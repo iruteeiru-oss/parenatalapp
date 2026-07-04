@@ -14,5 +14,6 @@ data class MessageEntity(
     val isOutgoing: Boolean,
     val isFlagged: Boolean,
     val flagReason: String?,
+    val platform: String = "whatsapp",
     val isSynced: Boolean = false
 )

@@ -108,6 +108,6 @@ class FirebaseRepository(
         "isOutgoing"  to isOutgoing,
         "isFlagged"   to isFlagged,
         "flagReason"  to flagReason,
-        "platform"    to "whatsapp"
+        "platform"    to platform
     )
 }

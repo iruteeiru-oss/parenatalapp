@@ -1,6 +1,7 @@
 package com.device.guardian.service.service.extractor
 
 import android.view.accessibility.AccessibilityNodeInfo
+import java.util.Calendar
 
 @Suppress("DEPRECATION")
 class MessageExtractor {
@@ -10,7 +11,8 @@ class MessageExtractor {
         val sender: String,
         val chatName: String,
         val isGroupChat: Boolean,
-        val isOutgoing: Boolean
+        val isOutgoing: Boolean,
+        val timestamp: Long
     )
 
     private var currentChatName = "Unknown"
@@ -26,15 +28,64 @@ class MessageExtractor {
     // ── Chat context ──────────────────────────────────────────────────────────
 
     private fun refreshChatContext(root: AccessibilityNodeInfo) {
-        val names = root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/conversation_contact_name")
-        names?.firstOrNull()?.text?.toString()?.let {
-            currentChatName = it
+        val possibleIds = listOf(
+            "com.whatsapp:id/conversation_contact_name",
+            "com.whatsapp:id/chat_name",
+            "com.whatsapp:id/name",
+            "com.whatsapp:id/conversation_title",
+            "com.whatsapp:id/title"
+        )
+        
+        var foundName = false
+        for (id in possibleIds) {
+            val names = root.findAccessibilityNodeInfosByViewId(id)
+            if (!names.isNullOrEmpty()) {
+                val text = names.firstOrNull()?.text?.toString()
+                names.forEach { it.recycle() }
+                if (!text.isNullOrBlank()) {
+                    currentChatName = text
+                    foundName = true
+                    break
+                }
+            }
         }
-        names?.forEach { it.recycle() }
+        
+        // Robust Toolbar search if ID lookup fails
+        if (!foundName) {
+            findToolbarTitle(root)?.let {
+                currentChatName = it
+                foundName = true
+            }
+        }
 
         val subtitles = root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/toolbar_subtitle")
         isGroupChat = subtitles?.firstOrNull()?.text?.contains(",") == true
         subtitles?.forEach { it.recycle() }
+    }
+
+    private fun findToolbarTitle(root: AccessibilityNodeInfo): String? {
+        val possibleToolbarIds = listOf("com.whatsapp:id/toolbar", "com.whatsapp:id/action_bar")
+        for (toolbarId in possibleToolbarIds) {
+            val toolbars = root.findAccessibilityNodeInfosByViewId(toolbarId)
+            if (!toolbars.isNullOrEmpty()) {
+                val toolbar = toolbars[0]
+                for (i in 0 until toolbar.childCount) {
+                    val child = toolbar.getChild(i) ?: continue
+                    if (child.className == "android.widget.TextView") {
+                        val text = child.text?.toString()
+                        child.recycle()
+                        if (!text.isNullOrBlank() && text.length > 2 && !text.contains(",") && !text.contains("online")) {
+                            toolbars.forEach { it.recycle() }
+                            return text
+                        }
+                    } else {
+                        child.recycle()
+                    }
+                }
+                toolbars.forEach { it.recycle() }
+            }
+        }
+        return null
     }
 
     // ── Message collection ────────────────────────────────────────────────────
@@ -85,13 +136,85 @@ class MessageExtractor {
         val outgoing = detectOutgoing(node)
         val sender = resolveSender(node, outgoing)
         
+        // Extract time from sibling
+        val timeStr = findTimeSibling(node)
+        val parsedTime = if (timeStr != null) parseTimeToMillis(timeStr) else System.currentTimeMillis()
+        
         return RawMessage(
             content = text,
             sender = sender,
             chatName = currentChatName,
             isGroupChat = isGroupChat,
-            isOutgoing = outgoing
+            isOutgoing = outgoing,
+            timestamp = parsedTime
         )
+    }
+
+    private fun findTimeSibling(node: AccessibilityNodeInfo): String? {
+        val parent = node.parent ?: return null
+        for (i in 0 until parent.childCount) {
+            val child = parent.getChild(i) ?: continue
+            val id = child.viewIdResourceName ?: ""
+            if (id.contains("message_time") || id.contains("time")) {
+                val text = child.text?.toString()
+                child.recycle()
+                parent.recycle()
+                if (!text.isNullOrBlank()) return text
+                continue
+            }
+            
+            if (child.className == "android.widget.TextView") {
+                val text = child.text?.toString()?.trim() ?: ""
+                if (text.matches(Regex("^\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?$"))) {
+                    child.recycle()
+                    parent.recycle()
+                    return text
+                }
+            }
+            child.recycle()
+        }
+        parent.recycle()
+        return null
+    }
+
+    private fun parseTimeToMillis(timeStr: String): Long {
+        val now = System.currentTimeMillis()
+        try {
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = now
+            val cleaned = timeStr.trim().uppercase()
+            
+            // 12-hour AM/PM: "10:30 AM" or "10:30PM"
+            val match12 = Regex("(\\d{1,2}):(\\d{2})\\s*([AP]M)").find(cleaned)
+            if (match12 != null) {
+                var hour = match12.groupValues[1].toInt()
+                val minute = match12.groupValues[2].toInt()
+                val amPm = match12.groupValues[3]
+                
+                if (amPm == "PM" && hour < 12) hour += 12
+                if (amPm == "AM" && hour == 12) hour = 0
+                
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                return calendar.timeInMillis
+            }
+            
+            // 24-hour: "22:15" or "10:30"
+            val match24 = Regex("(\\d{1,2}):(\\d{2})").find(cleaned)
+            if (match24 != null) {
+                val hour = match24.groupValues[1].toInt()
+                val minute = match24.groupValues[2].toInt()
+                
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                return calendar.timeInMillis
+            }
+        } catch (e: Exception) {}
+        return now
     }
 
     // ── Outgoing detection ────────────────────────────────────────────────────

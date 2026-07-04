@@ -73,6 +73,7 @@ class GuardianNotificationService : NotificationListenerService() {
                     isOutgoing = false, // Notifications are always incoming
                     isFlagged = filter.isFlagged,
                     flagReason = filter.reason,
+                    platform = "whatsapp",
                     isSynced = false
                 )
                 

@@ -46,7 +46,7 @@ public final class MessageDao_Impl implements MessageDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR IGNORE INTO `messages` (`id`,`content`,`sender`,`chatName`,`timestamp`,`isGroupChat`,`isOutgoing`,`isFlagged`,`flagReason`,`isSynced`) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR IGNORE INTO `messages` (`id`,`content`,`sender`,`chatName`,`timestamp`,`isGroupChat`,`isOutgoing`,`isFlagged`,`flagReason`,`platform`,`isSynced`) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -68,8 +68,9 @@ public final class MessageDao_Impl implements MessageDao {
         } else {
           statement.bindString(9, entity.getFlagReason());
         }
+        statement.bindString(10, entity.getPlatform());
         final int _tmp_3 = entity.isSynced() ? 1 : 0;
-        statement.bindLong(10, _tmp_3);
+        statement.bindLong(11, _tmp_3);
       }
     };
     this.__preparedStmtOfMarkSynced = new SharedSQLiteStatement(__db) {
@@ -209,6 +210,7 @@ public final class MessageDao_Impl implements MessageDao {
           final int _cursorIndexOfIsOutgoing = CursorUtil.getColumnIndexOrThrow(_cursor, "isOutgoing");
           final int _cursorIndexOfIsFlagged = CursorUtil.getColumnIndexOrThrow(_cursor, "isFlagged");
           final int _cursorIndexOfFlagReason = CursorUtil.getColumnIndexOrThrow(_cursor, "flagReason");
+          final int _cursorIndexOfPlatform = CursorUtil.getColumnIndexOrThrow(_cursor, "platform");
           final int _cursorIndexOfIsSynced = CursorUtil.getColumnIndexOrThrow(_cursor, "isSynced");
           final List<MessageEntity> _result = new ArrayList<MessageEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -241,11 +243,13 @@ public final class MessageDao_Impl implements MessageDao {
             } else {
               _tmpFlagReason = _cursor.getString(_cursorIndexOfFlagReason);
             }
+            final String _tmpPlatform;
+            _tmpPlatform = _cursor.getString(_cursorIndexOfPlatform);
             final boolean _tmpIsSynced;
             final int _tmp_3;
             _tmp_3 = _cursor.getInt(_cursorIndexOfIsSynced);
             _tmpIsSynced = _tmp_3 != 0;
-            _item = new MessageEntity(_tmpId,_tmpContent,_tmpSender,_tmpChatName,_tmpTimestamp,_tmpIsGroupChat,_tmpIsOutgoing,_tmpIsFlagged,_tmpFlagReason,_tmpIsSynced);
+            _item = new MessageEntity(_tmpId,_tmpContent,_tmpSender,_tmpChatName,_tmpTimestamp,_tmpIsGroupChat,_tmpIsOutgoing,_tmpIsFlagged,_tmpFlagReason,_tmpPlatform,_tmpIsSynced);
             _result.add(_item);
           }
           return _result;
@@ -316,6 +320,7 @@ public final class MessageDao_Impl implements MessageDao {
           final int _cursorIndexOfIsOutgoing = CursorUtil.getColumnIndexOrThrow(_cursor, "isOutgoing");
           final int _cursorIndexOfIsFlagged = CursorUtil.getColumnIndexOrThrow(_cursor, "isFlagged");
           final int _cursorIndexOfFlagReason = CursorUtil.getColumnIndexOrThrow(_cursor, "flagReason");
+          final int _cursorIndexOfPlatform = CursorUtil.getColumnIndexOrThrow(_cursor, "platform");
           final int _cursorIndexOfIsSynced = CursorUtil.getColumnIndexOrThrow(_cursor, "isSynced");
           final List<MessageEntity> _result = new ArrayList<MessageEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -348,11 +353,13 @@ public final class MessageDao_Impl implements MessageDao {
             } else {
               _tmpFlagReason = _cursor.getString(_cursorIndexOfFlagReason);
             }
+            final String _tmpPlatform;
+            _tmpPlatform = _cursor.getString(_cursorIndexOfPlatform);
             final boolean _tmpIsSynced;
             final int _tmp_3;
             _tmp_3 = _cursor.getInt(_cursorIndexOfIsSynced);
             _tmpIsSynced = _tmp_3 != 0;
-            _item = new MessageEntity(_tmpId,_tmpContent,_tmpSender,_tmpChatName,_tmpTimestamp,_tmpIsGroupChat,_tmpIsOutgoing,_tmpIsFlagged,_tmpFlagReason,_tmpIsSynced);
+            _item = new MessageEntity(_tmpId,_tmpContent,_tmpSender,_tmpChatName,_tmpTimestamp,_tmpIsGroupChat,_tmpIsOutgoing,_tmpIsFlagged,_tmpFlagReason,_tmpPlatform,_tmpIsSynced);
             _result.add(_item);
           }
           return _result;

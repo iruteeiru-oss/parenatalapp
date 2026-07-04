@@ -336,6 +336,65 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Step 6: SMS & Calls Permission -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSmsCalls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Step 6 — SMS &amp; Calls Monitor"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A1A1A"/>
+
+                    <TextView
+                        android:id="@+id/tvStep6Status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⬜ Pending"
+                        android:textSize="13sp"
+                        android:textColor="#6B6B6B"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Allow app to track incoming SMS messages and calls"
+                    android:textSize="13sp"
+                    android:textColor="#6B6B6B"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="12dp"/>
+
+                <Button
+                    android:id="@+id/btnEnableSmsCalls"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Grant SMS &amp; Call Access"
+                    android:backgroundTint="#1A1A1A"
+                    android:textColor="#FFFFFF"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Status Banner -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardStatus"
