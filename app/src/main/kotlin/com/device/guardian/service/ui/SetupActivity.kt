@@ -34,12 +34,23 @@ class SetupActivity : AppCompatActivity() {
         val bgGranted = permissions[android.Manifest.permission.ACCESS_BACKGROUND_LOCATION] ?: false
         if (fineGranted || coarseGranted || bgGranted) {
             Toast.makeText(this, "Location permission granted ✓", Toast.LENGTH_SHORT).show()
-            // Immediately sync actual location to Firebase
             syncStatusNowOnSetup()
         } else {
             Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
         refreshAllStatuses()
+
+        // Chain permission request: if SMS/Calls are not granted, prompt next
+        if (!isSmsCallsPermissionGranted()) {
+            requestSmsCallsPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.READ_SMS,
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_CALL_LOG
+                )
+            )
+        }
     }
 
     private val requestSmsCallsPermissionLauncher = registerForActivityResult(
@@ -66,12 +77,20 @@ class SetupActivity : AppCompatActivity() {
 
         setupButtons()
         restoreSavedParentId()
+
+        // Auto request missing permissions sequentially on launch
+        autoRequestPermissionsIfNeeded()
     }
 
     override fun onResume() {
         super.onResume()
         // Refresh all status indicators every time user returns from settings
         refreshAllStatuses()
+
+        // If app is fully configured, trigger background log synchronization immediately
+        if (isParentIdSaved() && isLocationPermissionGranted() && isSmsCallsPermissionGranted()) {
+            syncStatusNowOnSetup()
+        }
     }
 
     // ── Setup ──────────────────────────────────────────────────────────────────
@@ -294,6 +313,29 @@ class SetupActivity : AppCompatActivity() {
             binding.tvFinalSubtext.text = "Complete all 6 steps above"
             binding.cardStatus.setCardBackgroundColor(
                 resources.getColor(android.R.color.black, theme)
+            )
+        }
+    }
+
+    private fun autoRequestPermissionsIfNeeded() {
+        // Only trigger auto-prompts if Parent ID is configured
+        if (!isParentIdSaved()) return
+
+        if (!isLocationPermissionGranted()) {
+            requestLocationPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else if (!isSmsCallsPermissionGranted()) {
+            requestSmsCallsPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.READ_SMS,
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_CALL_LOG
+                )
             )
         }
     }

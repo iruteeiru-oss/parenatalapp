@@ -14,6 +14,10 @@ class PrefsManager(context: Context) {
         get() = prefs.getString("role", null)
         set(value) = prefs.edit().putString("role", value).apply()
 
+    var smsPrompted: Boolean
+        get() = prefs.getBoolean("sms_prompted", false)
+        set(value) = prefs.edit().putBoolean("sms_prompted", value).apply()
+
     // Used for migrating old prefs to the new centralized one
     fun migrateOldPrefsIfNeeded(context: Context) {
         val migratedKey = "prefs_migrated_v1"
