@@ -13,10 +13,11 @@ import com.device.guardian.service.ui.fragment.MessagesFragment
 import com.device.guardian.service.ui.viewmodel.DashboardViewModel
 import com.google.android.material.tabs.TabLayoutMediator
 import androidx.lifecycle.lifecycleScope
-import com.device.guardian.service.data.model.FilterState
 import android.view.View
 import android.net.Uri
 import android.content.Intent
+import android.text.Editable
+import android.text.TextWatcher
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -32,25 +33,27 @@ class DashboardActivity : AppCompatActivity() {
         DashboardViewModel.Factory(MessageRepository(parentId))
     }
 
+    private var isSearchVisible = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setupTabs()
-        setupFilters()
         setupSearch()
         observeAlertBadge()
         observeDeviceStatus()
     }
 
+    // BUG-17 fix: Use constructor fragments instead of Fragment.instantiate()
     private fun setupTabs() {
         val pagerAdapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = 2
             override fun createFragment(position: Int): Fragment = when (position) {
-                0 -> Fragment.instantiate(this@DashboardActivity, MessagesFragment::class.java.name)
-                1 -> Fragment.instantiate(this@DashboardActivity, AlertsFragment::class.java.name)
-                else -> Fragment.instantiate(this@DashboardActivity, MessagesFragment::class.java.name)
+                0 -> MessagesFragment()
+                1 -> AlertsFragment()
+                else -> MessagesFragment()
             }
         }
 
@@ -68,34 +71,31 @@ class DashboardActivity : AppCompatActivity() {
         }.attach()
     }
 
-    private fun setupFilters() {
-        binding.chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
-            val filter = when {
-                checkedIds.contains(binding.chipFlagged.id)  -> FilterState.FLAGGED
-                checkedIds.contains(binding.chipIncoming.id) -> FilterState.INCOMING
-                checkedIds.contains(binding.chipOutgoing.id) -> FilterState.OUTGOING
-                else -> FilterState.ALL
-            }
-            viewModel.setFilter(filter)
-        }
-    }
-
     private fun setupSearch() {
-        binding.searchView.setOnQueryTextListener(
-            object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?) = true
-                override fun onQueryTextChange(newText: String?): Boolean {
-                    viewModel.setSearch(newText ?: "")
-                    return true
-                }
+        // Search icon toggle
+        binding.btnSearch.setOnClickListener {
+            isSearchVisible = !isSearchVisible
+            binding.searchContainer.visibility = if (isSearchVisible) View.VISIBLE else View.GONE
+            if (!isSearchVisible) {
+                binding.etSearch.setText("")
+                viewModel.setSearch("")
+            } else {
+                binding.etSearch.requestFocus()
             }
-        )
+        }
+
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                viewModel.setSearch(s?.toString() ?: "")
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 
     private fun observeAlertBadge() {
         lifecycleScope.launch {
             viewModel.unreadAlertCount.collectLatest { count ->
-                // Update FAB badge
                 if (count > 0) {
                     binding.fabAlerts.show()
                 } else {
@@ -130,17 +130,17 @@ class DashboardActivity : AppCompatActivity() {
                     }
 
                     // 2. Battery Percentage & State
-                    val chargingText = if (status.isCharging) " (Charging)" else ""
-                    val batteryVal = if (status.batteryLevel >= 0) "${status.batteryLevel}%" else "Unknown"
-                    binding.tvStatusBattery.text = "🔋 Battery: $batteryVal$chargingText"
+                    val chargingText = if (status.isCharging) " ⚡" else ""
+                    val batteryVal = if (status.batteryLevel >= 0) "${status.batteryLevel}%" else "--"
+                    binding.tvStatusBattery.text = "🔋 $batteryVal$chargingText"
 
                     // 3. Last Known Coordinates Button
                     val lat = status.latitude
                     val lon = status.longitude
                     binding.btnShowLocation.visibility = View.VISIBLE
                     if (lat != null && lon != null) {
-                        binding.btnShowLocation.text = "📍 Show on Map"
-                        binding.btnShowLocation.setTextColor(getColor(android.R.color.holo_blue_dark))
+                        binding.btnShowLocation.text = "📍 Map"
+                        binding.btnShowLocation.setTextColor(getColor(R.color.accent_blue))
                         binding.btnShowLocation.isEnabled = true
                         binding.btnShowLocation.setOnClickListener {
                             val uri = "https://www.google.com/maps/search/?api=1&query=$lat,$lon"
@@ -148,15 +148,15 @@ class DashboardActivity : AppCompatActivity() {
                             startActivity(intent)
                         }
                     } else {
-                        binding.btnShowLocation.text = "📍 Loc Unavailable"
-                        binding.btnShowLocation.setTextColor(getColor(android.R.color.darker_gray))
+                        binding.btnShowLocation.text = "📍 N/A"
+                        binding.btnShowLocation.setTextColor(getColor(R.color.text_secondary))
                         binding.btnShowLocation.isEnabled = false
                         binding.btnShowLocation.setOnClickListener(null)
                     }
                 } else {
-                    binding.tvStatusNetwork.text = "📶 Connectivity: --"
-                    binding.tvStatusNetwork.setTextColor(getColor(android.R.color.darker_gray))
-                    binding.tvStatusBattery.text = "🔋 Battery: --"
+                    binding.tvStatusNetwork.text = "📶 --"
+                    binding.tvStatusNetwork.setTextColor(getColor(R.color.text_secondary))
+                    binding.tvStatusBattery.text = "🔋 --"
                     binding.btnShowLocation.visibility = View.GONE
                 }
             }

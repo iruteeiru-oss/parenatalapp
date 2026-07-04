@@ -7,10 +7,11 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="4dp"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="2dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="#1E1E1E"
     app:strokeWidth="1dp"
-    app:strokeColor="#FFCDD2">
+    app:strokeColor="#3A1111">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -39,14 +40,14 @@
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#C62828"/>
+                android:textColor="#FF6B6B"/>
 
             <TextView
                 android:id="@+id/tvAlertChat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="13sp"
-                android:textColor="#4A4A4A"
+                android:textColor="#8A8A8A"
                 android:layout_marginTop="2dp"/>
 
             <TextView
@@ -54,7 +55,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
-                android:textColor="#A0A0A0"
+                android:textColor="#555555"
                 android:layout_marginTop="2dp"/>
 
         </LinearLayout>

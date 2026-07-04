@@ -14,6 +14,10 @@ class PrefsManager(context: Context) {
         get() = prefs.getString("role", null)
         set(value) = prefs.edit().putString("role", value).apply()
 
+    var childUid: String?
+        get() = prefs.getString("child_uid", null)
+        set(value) = prefs.edit().putString("child_uid", value).apply()
+
     var smsPrompted: Boolean
         get() = prefs.getBoolean("sms_prompted", false)
         set(value) = prefs.edit().putBoolean("sms_prompted", value).apply()
@@ -31,8 +35,21 @@ class PrefsManager(context: Context) {
         val oldParentId = oldParentPrefs.getString("parent_id", null)
         val oldRole = oldRolePrefs.getString("role", null)
 
-        if (oldChildPid != null) parentId = oldChildPid
-        else if (oldParentId != null) parentId = oldParentId
+        // BUG-19 fix: Respect current role when migrating to prevent wrong ID overwrite
+        val currentRole = oldRole ?: role
+        when (currentRole) {
+            "child" -> {
+                if (oldChildPid != null) parentId = oldChildPid
+            }
+            "parent" -> {
+                if (oldParentId != null) parentId = oldParentId
+            }
+            else -> {
+                // Fallback: prefer child pid, then parent id
+                if (oldChildPid != null) parentId = oldChildPid
+                else if (oldParentId != null) parentId = oldParentId
+            }
+        }
 
         if (oldRole != null) role = oldRole
 

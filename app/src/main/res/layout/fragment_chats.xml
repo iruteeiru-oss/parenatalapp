@@ -4,15 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F4F6F9">
+    android:background="#0F0F0F">
 
-    <!-- Custom Sub-Header for Navigation -->
+    <!-- Sub-Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#FFFFFF"
+        android:background="#1A1A1A"
         android:padding="12dp"
         android:elevation="2dp">
 
@@ -23,17 +23,17 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_revert"
             android:contentDescription="Back"
-            app:tint="#1A1A1A"/>
+            app:tint="#FFFFFF"/>
 
         <TextView
             android:id="@+id/tvChatsTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Chats"
-            android:textColor="#1A1A1A"
+            android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_marginLeft="8dp"/>
+            android:layout_marginStart="8dp"/>
 
     </LinearLayout>
 
@@ -55,7 +55,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="No chats monitored yet"
-            android:textColor="#6B6B6B"
+            android:textColor="#666666"
             android:textSize="14sp"
             android:visibility="gone"/>
 

@@ -27,57 +27,43 @@ class CallTrackerReceiver : BroadcastReceiver() {
         context ?: return
         intent ?: return
 
-        if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
-            val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
-            
-            // Get incoming number from extra if available (only on older SDKs or specific configurations)
-            val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: "Unknown Number"
-            
-            val eventType = when (state) {
-                TelephonyManager.EXTRA_STATE_RINGING -> "Incoming Call Ringing"
-                TelephonyManager.EXTRA_STATE_OFFHOOK -> "Call Answered / Offhook"
-                TelephonyManager.EXTRA_STATE_IDLE -> "Call Ended"
-                else -> return
-            }
+        if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
 
-            scope.launch {
-                try {
-                    val db = AppDatabase.getInstance(context)
-                    val repo = FirebaseRepository(db.messageDao(), context)
+        val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
 
-                    var finalNumber = number
-                    var displayText = "$eventType: $number"
-                    var isOut = (state == TelephonyManager.EXTRA_STATE_OFFHOOK)
-                    var logTimestamp = System.currentTimeMillis()
+        // BUG-07 fix: Only log on IDLE — this is when the call is complete and CallLog has accurate data
+        if (state != TelephonyManager.EXTRA_STATE_IDLE) return
 
-                    if (state == TelephonyManager.EXTRA_STATE_IDLE) {
-                        // Retrieve the latest CallLog details to get the exact phone number and call type (needed for Android 10+)
-                        val latestCall = getLatestCallLog(context)
-                        if (latestCall != null) {
-                            finalNumber = latestCall.number
-                            logTimestamp = latestCall.date
-                            isOut = latestCall.type == android.provider.CallLog.Calls.OUTGOING_TYPE
-                            val callTypeStr = when (latestCall.type) {
-                                android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming Call"
-                                android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing Call"
-                                android.provider.CallLog.Calls.MISSED_TYPE -> "Missed Call"
-                                android.provider.CallLog.Calls.REJECTED_TYPE -> "Rejected Call"
-                                else -> "Call Ended"
-                            }
-                            displayText = "$callTypeStr (${latestCall.duration}s): $finalNumber"
-                        }
+        // BUG-01 fix: Use goAsync() to keep the receiver alive until coroutine completes
+        val pendingResult = goAsync()
+
+        scope.launch {
+            try {
+                val db = AppDatabase.getInstance(context)
+                val repo = FirebaseRepository(db.messageDao(), context)
+
+                val latestCall = getLatestCallLog(context)
+                if (latestCall != null) {
+                    val callTypeStr = when (latestCall.type) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming Call"
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing Call"
+                        android.provider.CallLog.Calls.MISSED_TYPE -> "Missed Call"
+                        android.provider.CallLog.Calls.REJECTED_TYPE -> "Rejected Call"
+                        else -> "Call Ended"
                     }
+                    val displayText = "$callTypeStr (${latestCall.duration}s): ${latestCall.number}"
+                    val isOut = latestCall.type == android.provider.CallLog.Calls.OUTGOING_TYPE
 
-                    // Dedup check (5 sec window to prevent duplicate logging on IDLE transition)
-                    val dupes = db.messageDao().countDuplicates(displayText, finalNumber, logTimestamp - 5000L)
+                    // Dedup check (5 sec window)
+                    val dupes = db.messageDao().countDuplicates(displayText, latestCall.number, latestCall.date - 5000L)
                     if (dupes > 0) return@launch
 
                     val entity = MessageEntity(
                         id = UUID.randomUUID().toString(),
                         content = displayText,
-                        sender = finalNumber,
-                        chatName = finalNumber,
-                        timestamp = logTimestamp,
+                        sender = latestCall.number,
+                        chatName = latestCall.number,
+                        timestamp = latestCall.date,
                         isGroupChat = false,
                         isOutgoing = isOut,
                         isFlagged = false,
@@ -87,16 +73,18 @@ class CallTrackerReceiver : BroadcastReceiver() {
                     )
 
                     db.messageDao().insert(entity)
-                    Log.d(TAG, "Logged Call state event: $displayText")
-                    
+                    Log.d(TAG, "Logged call: $displayText")
+
                     try {
                         repo.syncPending()
                     } catch (e: Exception) {
                         Log.w(TAG, "Call log sync failed: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error logging call event: ${e.message}")
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error logging call event: ${e.message}")
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -136,7 +124,6 @@ class CallTrackerReceiver : BroadcastReceiver() {
                         val type = c.getInt(typeIndex)
                         val duration = c.getInt(durIndex)
 
-                        // Ensure this call log is recent (occurred within the last 20 seconds)
                         if (System.currentTimeMillis() - date < 20_000) {
                             return CallLogEntry(number, date, type, duration)
                         }

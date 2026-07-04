@@ -1,23 +1,39 @@
 [
     {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_activity_main.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_main.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_bubble_outgoing.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_bubble_outgoing.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_activity_dashboard.xml.flat",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_dashboard.xml"
+        "merged": "com.device.guardian.service.app-debug-53:/layout_item_alert.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/item_alert.xml"
     },
     {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_activity_login.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_login.xml"
     },
     {
+        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_activity_dashboard.xml.flat",
+        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_dashboard.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_input.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_input.xml"
     },
     {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_activity_dashboard.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_dashboard.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_count_badge.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_count_badge.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_activity_login.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_login.xml"
     },
     {
         "merged": "com.device.guardian.service.app-debug-53:/layout_fragment_chats.xml.flat",
@@ -28,8 +44,20 @@
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\item_chat_profile.xml"
     },
     {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_activity_setup.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/activity_setup.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_search.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_search.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_item_message_bubble.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/item_message_bubble.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_item_chat_profile.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/item_chat_profile.xml"
     },
     {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_dot_red.xml.flat",
@@ -44,12 +72,20 @@
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\ic_parent.xml"
     },
     {
+        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_tag.xml.flat",
+        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_tag.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_ic_alert.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\ic_alert.xml"
     },
     {
-        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\drawable_bg_tag.xml.flat",
-        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\drawable\\bg_tag.xml"
+        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_fragment_chats.xml.flat",
+        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_chats.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/drawable_bg_bubble_incoming.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/drawable/bg_bubble_incoming.xml"
     },
     {
         "merged": "com.device.guardian.service.app-debug-53:/layout_fragment_conversation.xml.flat",
@@ -68,12 +104,20 @@
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\item_message_bubble.xml"
     },
     {
-        "merged": "com.device.guardian.service.app-debug-53:/layout_fragment_messages.xml.flat",
-        "source": "com.device.guardian.service.app-main-55:/layout/fragment_messages.xml"
+        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_fragment_platforms.xml.flat",
+        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_platforms.xml"
     },
     {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_activity_main.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/drawable_bg_search.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/drawable/bg_search.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/drawable_bg_input_dark.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/drawable/bg_input_dark.xml"
     },
     {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\xml_accessibility_service_config.xml.flat",
@@ -96,7 +140,19 @@
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_alerts.xml"
     },
     {
+        "merged": "com.device.guardian.service.app-debug-53:/layout_fragment_alerts.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/layout/fragment_alerts.xml"
+    },
+    {
+        "merged": "com.device.guardian.service.app-debug-53:/drawable_bg_bubble_outgoing.xml.flat",
+        "source": "com.device.guardian.service.app-main-55:/drawable/bg_bubble_outgoing.xml"
+    },
+    {
         "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_item_alert.xml.flat",
         "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\item_alert.xml"
+    },
+    {
+        "merged": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-debug-53:\\layout_fragment_conversation.xml.flat",
+        "source": "C:\\Users\\DELL\\.gradle\\daemon\\8.7\\com.device.guardian.service.app-main-55:\\layout\\fragment_conversation.xml"
     }
 ]

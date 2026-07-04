@@ -16,6 +16,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.lang.SuppressWarnings;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,12 +32,15 @@ public final class AppDatabase_Impl extends AppDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `messages` (`id` TEXT NOT NULL, `content` TEXT NOT NULL, `sender` TEXT NOT NULL, `chatName` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `isGroupChat` INTEGER NOT NULL, `isOutgoing` INTEGER NOT NULL, `isFlagged` INTEGER NOT NULL, `flagReason` TEXT, `platform` TEXT NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_chatName_timestamp` ON `messages` (`chatName`, `timestamp`)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_isSynced` ON `messages` (`isSynced`)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_platform` ON `messages` (`platform`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0b89b0fda2bc1d50bc46d21adbbf186f')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '33986eab0f45853c6cbeb237057b3305')");
       }
 
       @Override
@@ -98,7 +102,10 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsMessages.put("platform", new TableInfo.Column("platform", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMessages.put("isSynced", new TableInfo.Column("isSynced", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysMessages = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesMessages = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesMessages = new HashSet<TableInfo.Index>(3);
+        _indicesMessages.add(new TableInfo.Index("index_messages_chatName_timestamp", false, Arrays.asList("chatName", "timestamp"), Arrays.asList("ASC", "ASC")));
+        _indicesMessages.add(new TableInfo.Index("index_messages_isSynced", false, Arrays.asList("isSynced"), Arrays.asList("ASC")));
+        _indicesMessages.add(new TableInfo.Index("index_messages_platform", false, Arrays.asList("platform"), Arrays.asList("ASC")));
         final TableInfo _infoMessages = new TableInfo("messages", _columnsMessages, _foreignKeysMessages, _indicesMessages);
         final TableInfo _existingMessages = TableInfo.read(db, "messages");
         if (!_infoMessages.equals(_existingMessages)) {
@@ -108,7 +115,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "0b89b0fda2bc1d50bc46d21adbbf186f", "7d2686bcbb550a727233be55ef3d8d6a");
+    }, "33986eab0f45853c6cbeb237057b3305", "22b58c6eb68ccb5067fd494cce4a8bb1");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

@@ -3,28 +3,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow parent or child devices to access their specific monitor node
+    // Parent monitor nodes — secured with Firebase Auth
     match /monitors/{parentId} {
-      
-      // Messages and Alerts:
-      // The child device (data sender) doesn't authenticate in this design, so we restrict writes
-      // to only valid schemas and rate limit via functions if needed.
-      // For a real app, use Firebase Auth anonymously on the child device.
+
+      // Messages: child writes (authenticated), parent reads
       match /messages/{messageId} {
-        allow read: if request.auth != null && request.auth.uid == parentId; // Parent reads
-        allow write: if request.auth == null || request.auth.uid == parentId; // Allow child writes temporarily
+        allow read: if request.auth != null && request.auth.uid == parentId;
+        allow create: if request.auth != null
+          && request.resource.data.keys().hasAll(['content', 'sender', 'chatName', 'timestamp', 'platform'])
+          && request.resource.data.content is string
+          && request.resource.data.timestamp is number;
+        allow update: if request.auth != null;
       }
 
+      // Alerts: child creates, parent reads and marks read
       match /alerts/{alertId} {
         allow read, update: if request.auth != null && request.auth.uid == parentId;
-        allow create: if request.auth == null || request.auth.uid == parentId;
+        allow create: if request.auth != null
+          && request.resource.data.keys().hasAll(['messageId', 'chatName', 'reason', 'timestamp', 'sender']);
       }
-      
+
+      // Device status: child writes, parent reads
       match /status/device {
         allow read: if request.auth != null && request.auth.uid == parentId;
-        allow write: if request.auth == null || request.auth.uid == parentId;
+        allow write: if request.auth != null
+          && request.resource.data.keys().hasAll(['batteryLevel', 'isCharging', 'isOnline', 'timestamp']);
       }
-      
+
+      // FCM tokens: parent writes only
       match /fcmTokens/{tokenId} {
         allow write: if request.auth != null && request.auth.uid == parentId;
       }

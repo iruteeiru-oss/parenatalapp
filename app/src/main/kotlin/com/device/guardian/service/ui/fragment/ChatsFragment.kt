@@ -20,7 +20,11 @@ class ChatsFragment : Fragment() {
     private var _binding: FragmentChatsBinding? = null
     private val binding get() = _binding!!
     
-    private val viewModel: DashboardViewModel by activityViewModels()
+    // BUG-24 fix: Provide ViewModel factory
+    private val viewModel: DashboardViewModel by activityViewModels {
+        val parentId = requireActivity().intent.getStringExtra("parent_id") ?: "default_parent"
+        DashboardViewModel.Factory(com.device.guardian.service.data.repository.MessageRepository(parentId))
+    }
     private lateinit var chatListAdapter: ChatListAdapter
     private var platform: String = "whatsapp"
 

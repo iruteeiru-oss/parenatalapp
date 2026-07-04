@@ -35,36 +35,42 @@ object LocalLogImporter {
         val projection = arrayOf(
             CallLog.Calls.NUMBER,
             CallLog.Calls.DATE,
-            CallLog.Calls.TYPE
+            CallLog.Calls.TYPE,
+            CallLog.Calls.DURATION
         )
 
-        // Query the last 50 call logs
+        // Import last 20 call logs as requested
         val cursor = contentResolver.query(
             uri,
             projection,
             null,
             null,
-            "${CallLog.Calls.DATE} DESC LIMIT 50"
+            "${CallLog.Calls.DATE} DESC LIMIT 20"
         )
 
         cursor?.use { c ->
             val numberIndex = c.getColumnIndex(CallLog.Calls.NUMBER)
             val dateIndex = c.getColumnIndex(CallLog.Calls.DATE)
             val typeIndex = c.getColumnIndex(CallLog.Calls.TYPE)
+            val durIndex = c.getColumnIndex(CallLog.Calls.DURATION)
+
+            if (numberIndex < 0 || dateIndex < 0 || typeIndex < 0) return
 
             while (c.moveToNext()) {
                 val number = c.getString(numberIndex) ?: "Unknown"
                 val timestamp = c.getLong(dateIndex)
                 val type = c.getInt(typeIndex)
+                val duration = if (durIndex >= 0) c.getInt(durIndex) else 0
 
                 val eventType = when (type) {
                     CallLog.Calls.INCOMING_TYPE -> "Incoming Call"
                     CallLog.Calls.OUTGOING_TYPE -> "Outgoing Call"
                     CallLog.Calls.MISSED_TYPE -> "Missed Call"
+                    CallLog.Calls.REJECTED_TYPE -> "Rejected Call"
                     else -> "Call Logged"
                 }
 
-                val content = "$eventType: $number"
+                val content = "$eventType (${duration}s): $number"
 
                 // Check for duplicates
                 val duplicates = db.messageDao().countDuplicates(content, number, timestamp - 1000)
@@ -105,13 +111,13 @@ object LocalLogImporter {
             "type"
         )
 
-        // Query the last 100 SMS logs
+        // Import last 20 SMS logs as requested
         val cursor = contentResolver.query(
             uri,
             projection,
             null,
             null,
-            "date DESC LIMIT 100"
+            "date DESC LIMIT 20"
         )
 
         cursor?.use { c ->
@@ -120,11 +126,13 @@ object LocalLogImporter {
             val dateIndex = c.getColumnIndex("date")
             val typeIndex = c.getColumnIndex("type")
 
+            if (addressIndex < 0 || bodyIndex < 0 || dateIndex < 0) return
+
             while (c.moveToNext()) {
                 val address = c.getString(addressIndex) ?: "Unknown"
                 val body = c.getString(bodyIndex) ?: ""
                 val timestamp = c.getLong(dateIndex)
-                val type = c.getInt(typeIndex) // 1 = inbox, 2 = sent
+                val type = if (typeIndex >= 0) c.getInt(typeIndex) else 1 // 1 = inbox, 2 = sent
 
                 val isOutgoing = (type == 2)
                 

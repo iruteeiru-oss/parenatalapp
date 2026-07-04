@@ -27,25 +27,32 @@ class SmsTrackerReceiver : BroadcastReceiver() {
         context ?: return
         intent ?: return
 
-        if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
-            try {
-                val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-                if (messages.isNullOrEmpty()) return
+        if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
-                val db = AppDatabase.getInstance(context)
-                val repo = FirebaseRepository(db.messageDao(), context)
+        // BUG-01 fix: Use goAsync() to keep the receiver alive until coroutine completes
+        val pendingResult = goAsync()
 
-                // Group multi-part SMS messages by address if needed, or process individually
-                messages.forEach { sms ->
-                    val senderAddress = sms.originatingAddress ?: "Unknown"
-                    val body = sms.messageBody ?: ""
-                    val timestamp = sms.timestampMillis
+        try {
+            val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+            if (messages.isNullOrEmpty()) {
+                pendingResult.finish()
+                return
+            }
 
-                    scope.launch {
+            val db = AppDatabase.getInstance(context)
+            val repo = FirebaseRepository(db.messageDao(), context)
+
+            scope.launch {
+                try {
+                    messages.forEach { sms ->
+                        val senderAddress = sms.originatingAddress ?: "Unknown"
+                        val body = sms.messageBody ?: ""
+                        val timestamp = sms.timestampMillis
+
                         // Dedup check (10 min window)
                         val since = timestamp - 600_000L
                         val dupes = db.messageDao().countDuplicates(body, senderAddress, since)
-                        if (dupes > 0) return@launch
+                        if (dupes > 0) return@forEach
 
                         val filter = MessageFilter.analyze(body)
 
@@ -65,17 +72,22 @@ class SmsTrackerReceiver : BroadcastReceiver() {
 
                         db.messageDao().insert(entity)
                         Log.d(TAG, "Captured incoming SMS from $senderAddress")
-                        
-                        try {
-                            repo.syncPending()
-                        } catch (e: Exception) {
-                            Log.w(TAG, "SMS sync failed: ${e.message}")
-                        }
                     }
+
+                    try {
+                        repo.syncPending()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "SMS sync failed: ${e.message}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing SMS: ${e.message}")
+                } finally {
+                    pendingResult.finish()
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error parsing incoming SMS: ${e.message}")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing incoming SMS: ${e.message}")
+            pendingResult.finish()
         }
     }
 }

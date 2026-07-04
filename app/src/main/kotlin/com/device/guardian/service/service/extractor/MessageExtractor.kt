@@ -101,13 +101,10 @@ class MessageExtractor {
                 node.recycle()
             }
         } else {
-            // Fallback
-            val fallbackNodes = mutableListOf<AccessibilityNodeInfo>()
-            traverse(root, fallbackNodes)
-            fallbackNodes.forEach { node ->
-                processNode(node)?.let { results.add(it) }
-                node.recycle()
-            }
+            // BUG-06 fix: Fallback without obtain() — collect text directly
+            val fallbackMessages = mutableListOf<RawMessage>()
+            traverseAndCollect(root, fallbackMessages)
+            results.addAll(fallbackMessages)
         }
         return results
     }
@@ -150,33 +147,38 @@ class MessageExtractor {
         )
     }
 
+    // BUG-05 fix: Don't recycle parent — the caller doesn't own it.
+    // Only traverse children, recycle each child after use.
     private fun findTimeSibling(node: AccessibilityNodeInfo): String? {
         val parent = node.parent ?: return null
-        for (i in 0 until parent.childCount) {
-            val child = parent.getChild(i) ?: continue
-            val id = child.viewIdResourceName ?: ""
-            if (id.contains("message_time") || id.contains("time")) {
-                val text = child.text?.toString()
-                child.recycle()
-                parent.recycle()
-                if (!text.isNullOrBlank()) return text
-                continue
-            }
-            
-            if (child.className == "android.widget.TextView") {
-                val text = child.text?.toString()?.trim() ?: ""
-                if (text.matches(Regex("^\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?$"))) {
+        try {
+            for (i in 0 until parent.childCount) {
+                val child = parent.getChild(i) ?: continue
+                try {
+                    val id = child.viewIdResourceName ?: ""
+                    if (id.contains("message_time") || id.contains("time")) {
+                        val text = child.text?.toString()
+                        if (!text.isNullOrBlank()) return text
+                        continue
+                    }
+                    
+                    if (child.className == "android.widget.TextView") {
+                        val text = child.text?.toString()?.trim() ?: ""
+                        if (text.matches(Regex("^\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?$"))) {
+                            return text
+                        }
+                    }
+                } finally {
                     child.recycle()
-                    parent.recycle()
-                    return text
                 }
             }
-            child.recycle()
+        } finally {
+            parent.recycle()
         }
-        parent.recycle()
         return null
     }
 
+    // BUG-12 fix: Clamp parsed time to `now` — prevent future timestamps
     private fun parseTimeToMillis(timeStr: String): Long {
         val now = System.currentTimeMillis()
         try {
@@ -198,6 +200,11 @@ class MessageExtractor {
                 calendar.set(Calendar.MINUTE, minute)
                 calendar.set(Calendar.SECOND, 0)
                 calendar.set(Calendar.MILLISECOND, 0)
+                
+                // BUG-12 fix: If parsed time is in the future, it was from yesterday
+                if (calendar.timeInMillis > now) {
+                    calendar.add(Calendar.DAY_OF_YEAR, -1)
+                }
                 return calendar.timeInMillis
             }
             
@@ -211,6 +218,11 @@ class MessageExtractor {
                 calendar.set(Calendar.MINUTE, minute)
                 calendar.set(Calendar.SECOND, 0)
                 calendar.set(Calendar.MILLISECOND, 0)
+                
+                // BUG-12 fix: If parsed time is in the future, it was from yesterday
+                if (calendar.timeInMillis > now) {
+                    calendar.add(Calendar.DAY_OF_YEAR, -1)
+                }
                 return calendar.timeInMillis
             }
         } catch (e: Exception) {}
@@ -226,13 +238,13 @@ class MessageExtractor {
         while (current != null && iterations < 8) {
             val id = current.viewIdResourceName
             if (id != null) {
-                if (id.contains("outgoing", ignoreCase = true)) { isOut = true; break }
-                if (id.contains("incoming", ignoreCase = true)) { isOut = false; break }
+                if (id.contains("outgoing", ignoreCase = true)) { isOut = true; current.recycle(); break }
+                if (id.contains("incoming", ignoreCase = true)) { isOut = false; current.recycle(); break }
             }
             val desc = current.contentDescription?.toString()
             if (desc != null) {
-                if (desc.contains("sent", ignoreCase = true)) { isOut = true; break }
-                if (desc.contains("received", ignoreCase = true)) { isOut = false; break }
+                if (desc.contains("sent", ignoreCase = true)) { isOut = true; current.recycle(); break }
+                if (desc.contains("received", ignoreCase = true)) { isOut = false; current.recycle(); break }
             }
             val nextParent = current.parent
             current.recycle()
@@ -271,19 +283,31 @@ class MessageExtractor {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Fallback when WhatsApp updates change view IDs
-    private fun traverse(node: AccessibilityNodeInfo?, results: MutableList<AccessibilityNodeInfo>) {
+    // BUG-06 fix: Refactored fallback to collect RawMessages directly
+    // instead of using obtain() + recycle patterns that caused use-after-recycle
+    private fun traverseAndCollect(node: AccessibilityNodeInfo?, results: MutableList<RawMessage>) {
         node ?: return
         if (node.className == "android.widget.TextView" && !node.text.isNullOrBlank() && node.text.length > 2) {
-            // Heuristic filtering for fallback (Issue #15)
             val resId = node.viewIdResourceName ?: ""
             if (!resId.contains("toolbar") && !resId.contains("time") && !resId.contains("date") && !resId.contains("header")) {
-                results.add(AccessibilityNodeInfo.obtain(node)) 
+                val text = node.text.toString().trim()
+                if (!isTimestampOrDate(text)) {
+                    results.add(
+                        RawMessage(
+                            content = text,
+                            sender = currentChatName,
+                            chatName = currentChatName,
+                            isGroupChat = isGroupChat,
+                            isOutgoing = false,
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
+                }
             }
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
-            traverse(child, results)
+            traverseAndCollect(child, results)
             child?.recycle()
         }
     }

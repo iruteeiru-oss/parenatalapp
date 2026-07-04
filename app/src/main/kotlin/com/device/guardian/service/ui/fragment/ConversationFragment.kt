@@ -19,7 +19,11 @@ class ConversationFragment : Fragment() {
     private var _binding: FragmentConversationBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: DashboardViewModel by activityViewModels()
+    // BUG-24 fix: Provide ViewModel factory to prevent crash if fragment accesses VM first
+    private val viewModel: DashboardViewModel by activityViewModels {
+        val parentId = requireActivity().intent.getStringExtra("parent_id") ?: "default_parent"
+        DashboardViewModel.Factory(com.device.guardian.service.data.repository.MessageRepository(parentId))
+    }
     private lateinit var messageBubbleAdapter: MessageBubbleAdapter
     
     private var chatName: String = ""
@@ -88,7 +92,9 @@ class ConversationFragment : Fragment() {
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.filteredMessages.collectLatest { messages ->
+            // BUG-09 fix: Use allMessages instead of filteredMessages
+            // so conversation content is not hidden by dashboard-level search
+            viewModel.allMessages.collectLatest { messages ->
                 val conversationMessages = messages
                     .filter { it.chatName == chatName && it.platform == platform }
                     .sortedBy { it.timestamp }

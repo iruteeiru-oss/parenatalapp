@@ -11,12 +11,14 @@ import com.device.guardian.service.service.filter.MessageFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class GuardianNotificationService : NotificationListenerService() {
 
     private lateinit var db: AppDatabase
+    private lateinit var repo: FirebaseRepository  // BUG-13 fix: create once
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     companion object {
@@ -26,6 +28,7 @@ class GuardianNotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         db = AppDatabase.getInstance(this)
+        repo = FirebaseRepository(db.messageDao(), this)  // BUG-13 fix: reuse
         Log.d(TAG, "Notification listener started")
     }
 
@@ -44,14 +47,37 @@ class GuardianNotificationService : NotificationListenerService() {
 
         if (text.isNullOrBlank() || title.isNullOrBlank()) return
 
-        // In WhatsApp, title is usually the Sender or "Group Name @ Sender"
-        // Let's assume title is chatName for 1:1, or contains both for groups
-        val chatName = if (title.contains("@")) title.substringAfter("@").trim() else title
-        val sender = if (title.contains("@")) title.substringBefore("@").trim() else title
-        val isGroup = title.contains("@")
+        // BUG-14 fix: WhatsApp group notifications typically use "Sender: message" in text
+        // and group name in title, OR "messages from X group" format.
+        // For 1:1 chats, title = contact name.
+        // Some locales use "Sender @ Group" in title — handle both `:` and `@`
+        val isGroup: Boolean
+        val chatName: String
+        val sender: String
+
+        when {
+            title.contains(" @ ") -> {
+                // "Sender @ GroupName" format
+                isGroup = true
+                sender = title.substringBefore(" @ ").trim()
+                chatName = title.substringAfter(" @ ").trim()
+            }
+            title.contains(": ") -> {
+                // "GroupName: Sender" format (some locales)
+                isGroup = true
+                chatName = title.substringBefore(": ").trim()
+                sender = title.substringAfter(": ").trim()
+            }
+            else -> {
+                // 1:1 chat — title is the contact name
+                isGroup = false
+                chatName = title
+                sender = title
+            }
+        }
 
         // Ignore summary notifications like "2 new messages"
-        if (text.matches(Regex("\\d+ new messages"))) return
+        if (text.matches(Regex("\\d+ new messages?"))) return
 
         scope.launch {
             try {
@@ -80,8 +106,6 @@ class GuardianNotificationService : NotificationListenerService() {
                 db.messageDao().insert(entity)
                 Log.d(TAG, "Saved background message from $sender")
                 
-                // Sync to Firebase immediately
-                val repo = FirebaseRepository(db.messageDao(), this@GuardianNotificationService)
                 repo.syncPending()
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving notification message: ${e.message}")
@@ -89,7 +113,9 @@ class GuardianNotificationService : NotificationListenerService() {
         }
     }
 
+    // BUG-02 fix: Cancel the coroutine scope on destroy
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
     }
 }

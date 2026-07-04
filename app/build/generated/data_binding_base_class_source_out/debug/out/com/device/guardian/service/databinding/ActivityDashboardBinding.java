@@ -4,10 +4,12 @@ package com.device.guardian.service.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.viewbinding.ViewBinding;
@@ -16,8 +18,6 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.device.guardian.service.R;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import java.lang.NullPointerException;
@@ -32,31 +32,22 @@ public final class ActivityDashboardBinding implements ViewBinding {
   public final AppBarLayout appBar;
 
   @NonNull
+  public final ImageButton btnSearch;
+
+  @NonNull
   public final TextView btnShowLocation;
 
   @NonNull
   public final MaterialCardView cardDeviceStatus;
 
   @NonNull
-  public final Chip chipAll;
-
-  @NonNull
-  public final Chip chipFlagged;
-
-  @NonNull
-  public final ChipGroup chipGroup;
-
-  @NonNull
-  public final Chip chipIncoming;
-
-  @NonNull
-  public final Chip chipOutgoing;
+  public final EditText etSearch;
 
   @NonNull
   public final FloatingActionButton fabAlerts;
 
   @NonNull
-  public final SearchView searchView;
+  public final LinearLayout searchContainer;
 
   @NonNull
   public final TabLayout tabLayout;
@@ -74,23 +65,20 @@ public final class ActivityDashboardBinding implements ViewBinding {
   public final ViewPager2 viewPager;
 
   private ActivityDashboardBinding(@NonNull CoordinatorLayout rootView,
-      @NonNull AppBarLayout appBar, @NonNull TextView btnShowLocation,
-      @NonNull MaterialCardView cardDeviceStatus, @NonNull Chip chipAll, @NonNull Chip chipFlagged,
-      @NonNull ChipGroup chipGroup, @NonNull Chip chipIncoming, @NonNull Chip chipOutgoing,
-      @NonNull FloatingActionButton fabAlerts, @NonNull SearchView searchView,
-      @NonNull TabLayout tabLayout, @NonNull Toolbar toolbar, @NonNull TextView tvStatusBattery,
-      @NonNull TextView tvStatusNetwork, @NonNull ViewPager2 viewPager) {
+      @NonNull AppBarLayout appBar, @NonNull ImageButton btnSearch,
+      @NonNull TextView btnShowLocation, @NonNull MaterialCardView cardDeviceStatus,
+      @NonNull EditText etSearch, @NonNull FloatingActionButton fabAlerts,
+      @NonNull LinearLayout searchContainer, @NonNull TabLayout tabLayout, @NonNull Toolbar toolbar,
+      @NonNull TextView tvStatusBattery, @NonNull TextView tvStatusNetwork,
+      @NonNull ViewPager2 viewPager) {
     this.rootView = rootView;
     this.appBar = appBar;
+    this.btnSearch = btnSearch;
     this.btnShowLocation = btnShowLocation;
     this.cardDeviceStatus = cardDeviceStatus;
-    this.chipAll = chipAll;
-    this.chipFlagged = chipFlagged;
-    this.chipGroup = chipGroup;
-    this.chipIncoming = chipIncoming;
-    this.chipOutgoing = chipOutgoing;
+    this.etSearch = etSearch;
     this.fabAlerts = fabAlerts;
-    this.searchView = searchView;
+    this.searchContainer = searchContainer;
     this.tabLayout = tabLayout;
     this.toolbar = toolbar;
     this.tvStatusBattery = tvStatusBattery;
@@ -131,6 +119,12 @@ public final class ActivityDashboardBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btnSearch;
+      ImageButton btnSearch = ViewBindings.findChildViewById(rootView, id);
+      if (btnSearch == null) {
+        break missingId;
+      }
+
       id = R.id.btnShowLocation;
       TextView btnShowLocation = ViewBindings.findChildViewById(rootView, id);
       if (btnShowLocation == null) {
@@ -143,33 +137,9 @@ public final class ActivityDashboardBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.chipAll;
-      Chip chipAll = ViewBindings.findChildViewById(rootView, id);
-      if (chipAll == null) {
-        break missingId;
-      }
-
-      id = R.id.chipFlagged;
-      Chip chipFlagged = ViewBindings.findChildViewById(rootView, id);
-      if (chipFlagged == null) {
-        break missingId;
-      }
-
-      id = R.id.chipGroup;
-      ChipGroup chipGroup = ViewBindings.findChildViewById(rootView, id);
-      if (chipGroup == null) {
-        break missingId;
-      }
-
-      id = R.id.chipIncoming;
-      Chip chipIncoming = ViewBindings.findChildViewById(rootView, id);
-      if (chipIncoming == null) {
-        break missingId;
-      }
-
-      id = R.id.chipOutgoing;
-      Chip chipOutgoing = ViewBindings.findChildViewById(rootView, id);
-      if (chipOutgoing == null) {
+      id = R.id.etSearch;
+      EditText etSearch = ViewBindings.findChildViewById(rootView, id);
+      if (etSearch == null) {
         break missingId;
       }
 
@@ -179,9 +149,9 @@ public final class ActivityDashboardBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.searchView;
-      SearchView searchView = ViewBindings.findChildViewById(rootView, id);
-      if (searchView == null) {
+      id = R.id.searchContainer;
+      LinearLayout searchContainer = ViewBindings.findChildViewById(rootView, id);
+      if (searchContainer == null) {
         break missingId;
       }
 
@@ -215,9 +185,9 @@ public final class ActivityDashboardBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityDashboardBinding((CoordinatorLayout) rootView, appBar, btnShowLocation,
-          cardDeviceStatus, chipAll, chipFlagged, chipGroup, chipIncoming, chipOutgoing, fabAlerts,
-          searchView, tabLayout, toolbar, tvStatusBattery, tvStatusNetwork, viewPager);
+      return new ActivityDashboardBinding((CoordinatorLayout) rootView, appBar, btnSearch,
+          btnShowLocation, cardDeviceStatus, etSearch, fabAlerts, searchContainer, tabLayout,
+          toolbar, tvStatusBattery, tvStatusNetwork, viewPager);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

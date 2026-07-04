@@ -59,7 +59,7 @@ class ChatListAdapter(
 
     companion object {
         val DIFF = object : DiffUtil.ItemCallback<ChatSummary>() {
-            override fun areItemsTheSame(a: ChatSummary, b: ChatSummary) = a.chatName == b.chatName
+            override fun areItemsTheSame(a: ChatSummary, b: ChatSummary) = a.chatName == b.chatName && a.platform == b.platform
             override fun areContentsTheSame(a: ChatSummary, b: ChatSummary) = a == b
         }
     }

@@ -28,41 +28,55 @@ class FirebaseRepository(
         return "default_parent"
     }
 
+    // BUG-11 fix: Use true batching — accumulate up to 450 writes per batch, single commit
     suspend fun syncPending() {
         val unsynced = dao.getUnsynced()
         if (unsynced.isEmpty()) return
 
         val parentId = getParentId()
-        unsynced.forEach { entity ->
+        
+        // Firestore limit is 500 writes per batch; use 450 to leave headroom for alerts
+        val chunks = unsynced.chunked(200) // ~200 messages + possible 200 alerts = 400 max writes
+        
+        for (chunk in chunks) {
             try {
                 val batch = db.batch()
-                
-                val msgRef = db.collection("monitors")
-                    .document(parentId)
-                    .collection("messages")
-                    .document(entity.id)
-                batch.set(msgRef, entity.toMap(), SetOptions.merge())
+                val idsToMark = mutableListOf<String>()
 
-                if (entity.isFlagged) {
-                    val alertRef = db.collection("monitors")
+                for (entity in chunk) {
+                    val msgRef = db.collection("monitors")
                         .document(parentId)
-                        .collection("alerts")
+                        .collection("messages")
                         .document(entity.id)
-                    batch.set(alertRef, mapOf(
-                        "messageId"  to entity.id,
-                        "chatName"   to entity.chatName,
-                        "reason"     to entity.flagReason,
-                        "timestamp"  to entity.timestamp,
-                        "sender"     to entity.sender,
-                        "isRead"     to false
-                    ))
+                    batch.set(msgRef, entity.toMap(), SetOptions.merge())
+
+                    if (entity.isFlagged) {
+                        val alertRef = db.collection("monitors")
+                            .document(parentId)
+                            .collection("alerts")
+                            .document(entity.id)
+                        batch.set(alertRef, mapOf(
+                            "messageId"  to entity.id,
+                            "chatName"   to entity.chatName,
+                            "reason"     to entity.flagReason,
+                            "timestamp"  to entity.timestamp,
+                            "sender"     to entity.sender,
+                            "isRead"     to false
+                        ))
+                    }
+                    idsToMark.add(entity.id)
                 }
 
                 batch.commit().await()
-                dao.markSynced(entity.id)
-
+                
+                // Mark all synced after the batch succeeds
+                for (id in idsToMark) {
+                    dao.markSynced(id)
+                }
+                
+                Log.d(tag, "Batch synced ${idsToMark.size} messages")
             } catch (e: Exception) {
-                Log.w(tag, "Sync failed for ${entity.id} — will retry", e)
+                Log.w(tag, "Batch sync failed — will retry on next cycle", e)
             }
         }
     }

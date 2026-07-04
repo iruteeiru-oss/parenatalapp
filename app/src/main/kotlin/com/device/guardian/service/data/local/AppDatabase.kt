@@ -5,7 +5,7 @@ import androidx.room.*
 
 @Database(
     entities = [MessageEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,7 +20,7 @@ abstract class AppDatabase : RoomDatabase() {
                 Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "gd_local.db"           // generic db name
+                    "gd_local.db"
                 )
                 .fallbackToDestructiveMigration()
                 .build()
