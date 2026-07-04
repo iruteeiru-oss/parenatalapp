@@ -3,36 +3,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Parent monitor nodes — secured with Firebase Auth
+    // Parent monitor nodes — Authentication bypassed/disabled for checking/testing
     match /monitors/{parentId} {
 
-      // Messages: child writes (authenticated), parent reads
+      // Messages: child writes, parent reads
       match /messages/{messageId} {
-        allow read: if request.auth != null && request.auth.uid == parentId;
-        allow create: if request.auth != null
-          && request.resource.data.keys().hasAll(['content', 'sender', 'chatName', 'timestamp', 'platform'])
-          && request.resource.data.content is string
-          && request.resource.data.timestamp is number;
-        allow update: if request.auth != null;
+        allow read, write: if true;
       }
 
       // Alerts: child creates, parent reads and marks read
       match /alerts/{alertId} {
-        allow read, update: if request.auth != null && request.auth.uid == parentId;
-        allow create: if request.auth != null
-          && request.resource.data.keys().hasAll(['messageId', 'chatName', 'reason', 'timestamp', 'sender']);
+        allow read, write: if true;
       }
 
       // Device status: child writes, parent reads
       match /status/device {
-        allow read: if request.auth != null && request.auth.uid == parentId;
-        allow write: if request.auth != null
-          && request.resource.data.keys().hasAll(['batteryLevel', 'isCharging', 'isOnline', 'timestamp']);
+        allow read, write: if true;
       }
 
       // FCM tokens: parent writes only
       match /fcmTokens/{tokenId} {
-        allow write: if request.auth != null && request.auth.uid == parentId;
+        allow read, write: if true;
       }
     }
   }

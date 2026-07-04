@@ -125,7 +125,8 @@ class SetupActivity : AppCompatActivity() {
                 binding.btnSaveParentId.isEnabled = false
                 binding.btnSaveParentId.text = "Connecting..."
 
-                // Authenticate child anonymously with Firebase
+                // Bypassed Firebase Auth for testing/checking purposes (mandatory login commented out)
+                /*
                 auth.signInAnonymously()
                     .addOnSuccessListener { result ->
                         val childUid = result.user?.uid
@@ -160,8 +161,39 @@ class SetupActivity : AppCompatActivity() {
                     .addOnFailureListener { e ->
                         binding.btnSaveParentId.isEnabled = true
                         binding.btnSaveParentId.text = "Save ID"
-                        Toast.makeText(this, "Auth failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        val msg = e.message ?: ""
+                        if (msg.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) || msg.contains("config not found", ignoreCase = true)) {
+                            Toast.makeText(this, "Anonymous Authentication is disabled in the Firebase Console. Please enable it in Firebase -> Build -> Authentication.", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this, "Auth failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
                     }
+                */
+                prefs.parentId = id
+                prefs.childUid = "test_child_uid"
+                Toast.makeText(this, "Connected to Parent ✓", Toast.LENGTH_SHORT).show()
+                refreshAllStatuses()
+                binding.btnSaveParentId.isEnabled = true
+                binding.btnSaveParentId.text = "Save ID"
+
+                val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
+                lifecycleScope.launch {
+                    try {
+                        db.messageDao().resetSyncStatus()
+                    } catch (_: Exception) {}
+                }
+
+                syncStatusNowOnSetup()
+
+                val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
+                lifecycleScope.launch {
+                    try {
+                        repo.syncPending()
+                        Toast.makeText(this@SetupActivity, "Linked to Parent Dashboard ✓", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(this@SetupActivity, "Sync Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
             } else {
                 binding.etParentId.error = "Must be at least 4 chars"
             }

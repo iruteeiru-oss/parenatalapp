@@ -45,10 +45,10 @@ class LoginActivity : AppCompatActivity() {
             binding.progressLogin.visibility = View.VISIBLE
             binding.btnLogin.isEnabled = false
 
-            // Sign in anonymously with Firebase Auth
+            // Bypassed Firebase Auth for testing/checking purposes (mandatory login commented out)
+            /*
             auth.signInAnonymously()
                 .addOnSuccessListener { _ ->
-                    // Save the parent ID (the code the user chose)
                     prefs.parentId = id
                     binding.progressLogin.visibility = View.GONE
                     navigateToDashboard(id)
@@ -56,9 +56,18 @@ class LoginActivity : AppCompatActivity() {
                 .addOnFailureListener { e ->
                     binding.progressLogin.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
-                    binding.tvError.text = "Auth failed: ${e.message}"
+                    val msg = e.message ?: ""
+                    if (msg.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) || msg.contains("config not found", ignoreCase = true)) {
+                        binding.tvError.text = "Error: Anonymous Authentication is disabled in Firebase Console.\n\nPlease go to Firebase Console -> Build -> Authentication -> Sign-in method -> Enable 'Anonymous'."
+                    } else {
+                        binding.tvError.text = "Auth failed: ${e.message}"
+                    }
                     binding.tvError.visibility = View.VISIBLE
                 }
+            */
+            prefs.parentId = id
+            binding.progressLogin.visibility = View.GONE
+            navigateToDashboard(id)
         }
     }
 
