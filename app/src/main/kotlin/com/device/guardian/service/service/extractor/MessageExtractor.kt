@@ -61,9 +61,26 @@ class MessageExtractor {
         return results
     }
 
+    private fun isTimestampOrDate(text: String): Boolean {
+        // Match times like "12:34", "1:23 PM", "12:34 PM", "22:15", "10:35 AM", etc.
+        val timeRegex = Regex("^\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?$")
+        if (text.matches(timeRegex)) return true
+        
+        // Match generic days or headers
+        val upper = text.uppercase()
+        if (upper == "TODAY" || upper == "YESTERDAY" || upper.contains("YESTERDAY AT") || upper.contains("TODAY AT")) return true
+        
+        // Match dates like "04/07/2026", "04.07.26", "2026-07-04"
+        val dateRegex = Regex("^\\d{1,4}[/.-]\\d{1,2}[/.-]\\d{2,4}$")
+        if (text.matches(dateRegex)) return true
+        
+        return false
+    }
+
     private fun processNode(node: AccessibilityNodeInfo): RawMessage? {
         val text = node.text?.toString()?.trim() ?: return null
         if (text.length < 2) return null
+        if (isTimestampOrDate(text)) return null
         
         val outgoing = detectOutgoing(node)
         val sender = resolveSender(node, outgoing)
