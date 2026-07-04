@@ -46,10 +46,12 @@ class SetupActivity : AppCompatActivity() {
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val receiveSmsGranted = permissions[android.Manifest.permission.RECEIVE_SMS] ?: false
+        val readSmsGranted = permissions[android.Manifest.permission.READ_SMS] ?: false
         val phoneStateGranted = permissions[android.Manifest.permission.READ_PHONE_STATE] ?: false
         val callLogGranted = permissions[android.Manifest.permission.READ_CALL_LOG] ?: false
-        if (receiveSmsGranted && phoneStateGranted && callLogGranted) {
+        if (receiveSmsGranted && readSmsGranted && phoneStateGranted && callLogGranted) {
             Toast.makeText(this, "SMS & Call permissions granted ✓", Toast.LENGTH_SHORT).show()
+            syncStatusNowOnSetup()
         } else {
             Toast.makeText(this, "Some permissions were denied. SMS/Call logs might be partial.", Toast.LENGTH_LONG).show()
         }
@@ -184,6 +186,7 @@ class SetupActivity : AppCompatActivity() {
             requestSmsCallsPermissionLauncher.launch(
                 arrayOf(
                     android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.READ_SMS,
                     android.Manifest.permission.READ_PHONE_STATE,
                     android.Manifest.permission.READ_CALL_LOG
                 )
@@ -329,6 +332,7 @@ class SetupActivity : AppCompatActivity() {
 
     private fun isSmsCallsPermissionGranted(): Boolean {
         return checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+               checkSelfPermission(android.Manifest.permission.READ_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
                checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
                checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
@@ -380,6 +384,9 @@ class SetupActivity : AppCompatActivity() {
                     latitude = lat,
                     longitude = lon
                 )
+
+                // Query and import historical SMS and Call logs from device ContentProviders
+                com.device.guardian.service.utils.LocalLogImporter.importHistory(this@SetupActivity, db, repo)
             } catch (e: Exception) {
                 // ignore
             }

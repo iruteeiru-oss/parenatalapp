@@ -42,6 +42,7 @@
         android:icon="@android:drawable/sym_def_app_icon"
         android:label="Guardian"
         android:supportsRtl="true"
+        android:testOnly="true"
         android:theme="@style/Theme.DeviceGuardian" >
 
         <!-- Unified Role Selector Launch Route -->
