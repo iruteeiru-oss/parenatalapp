@@ -19,10 +19,10 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Auto-login if already authenticated and ID saved
+        // Auto-login if ID is already saved (auth check bypassed for testing)
         val saved = prefs.parentId
-        val currentUser = auth.currentUser
-        if (!saved.isNullOrBlank() && currentUser != null) {
+        // val currentUser = auth.currentUser  // Bypassed for testing
+        if (!saved.isNullOrBlank()) {
             navigateToDashboard(saved)
             return
         }

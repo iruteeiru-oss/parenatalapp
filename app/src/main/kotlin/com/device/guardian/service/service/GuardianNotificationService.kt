@@ -47,26 +47,31 @@ class GuardianNotificationService : NotificationListenerService() {
 
         if (text.isNullOrBlank() || title.isNullOrBlank()) return
 
-        // BUG-14 fix: WhatsApp group notifications typically use "Sender: message" in text
-        // and group name in title, OR "messages from X group" format.
-        // For 1:1 chats, title = contact name.
-        // Some locales use "Sender @ Group" in title — handle both `:` and `@`
+        // BUG-R2-08 fix: Use Android's group conversation flag (API 28+) for reliability,
+        // with fallback to "Sender @ GroupName" format only.
+        // Removed ": " heuristic which false-positives on names like "Dr: Smith".
         val isGroup: Boolean
         val chatName: String
         val sender: String
 
+        val androidIsGroup = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false)
+        } else {
+            null // can't determine from system flag
+        }
+
         when {
-            title.contains(" @ ") -> {
-                // "Sender @ GroupName" format
+            androidIsGroup == true || title.contains(" @ ") -> {
+                // Group chat: "Sender @ GroupName" format or flagged by Android
                 isGroup = true
-                sender = title.substringBefore(" @ ").trim()
-                chatName = title.substringAfter(" @ ").trim()
-            }
-            title.contains(": ") -> {
-                // "GroupName: Sender" format (some locales)
-                isGroup = true
-                chatName = title.substringBefore(": ").trim()
-                sender = title.substringAfter(": ").trim()
+                if (title.contains(" @ ")) {
+                    sender = title.substringBefore(" @ ").trim()
+                    chatName = title.substringAfter(" @ ").trim()
+                } else {
+                    // Group flagged by Android but no @ delimiter — title is group name
+                    chatName = title
+                    sender = title  // best effort
+                }
             }
             else -> {
                 // 1:1 chat — title is the contact name

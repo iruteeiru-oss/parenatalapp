@@ -22,6 +22,11 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.FirebaseAuth
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import com.device.guardian.service.worker.SyncWorker
+import java.util.concurrent.TimeUnit
 
 class SetupActivity : AppCompatActivity() {
 
@@ -29,40 +34,36 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var prefs: com.device.guardian.service.utils.PrefsManager
     private val auth by lazy { FirebaseAuth.getInstance() }
 
-    // Step 1: Request foreground location only
-    private val requestForegroundLocationLauncher = registerForActivityResult(
+    // ── Permission Launchers (chained sequentially) ───────────────────────────
+
+    // Chain step 3: SMS & Calls (final step)
+    private val requestSmsCallsPermissionLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        if (fineGranted || coarseGranted) {
-            Toast.makeText(this, "Location permission granted ✓", Toast.LENGTH_SHORT).show()
-            // BUG-03 fix: Now request background location SEPARATELY after foreground is granted
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                requestBackgroundLocationLauncher.launch(
-                    arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                )
-            }
+        val allGranted = permissions.values.all { it }
+        if (allGranted) {
+            Toast.makeText(this, "SMS & Call permissions granted ✓", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Some SMS/Call permissions denied. Logs might be partial.", Toast.LENGTH_LONG).show()
         }
         refreshAllStatuses()
+        // All permission steps done — import history & schedule sync
+        onAllPermissionsHandled()
     }
 
-    // Step 2: Background location requested separately (BUG-03 fix)
+    // Chain step 2: Background Location → then SMS/Calls
     private val requestBackgroundLocationLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val bgGranted = permissions[android.Manifest.permission.ACCESS_BACKGROUND_LOCATION] ?: false
         if (bgGranted) {
             Toast.makeText(this, "Background location granted ✓", Toast.LENGTH_SHORT).show()
-            syncStatusNowOnSetup()
         } else {
             Toast.makeText(this, "Background location denied — location may not work when app is closed", Toast.LENGTH_LONG).show()
         }
         refreshAllStatuses()
 
-        // Chain: if SMS/Calls not granted, prompt next
+        // Chain → request SMS/Calls permissions next
         if (!isSmsCallsPermissionGranted()) {
             requestSmsCallsPermissionLauncher.launch(
                 arrayOf(
@@ -72,24 +73,48 @@ class SetupActivity : AppCompatActivity() {
                     android.Manifest.permission.READ_CALL_LOG
                 )
             )
+        } else {
+            onAllPermissionsHandled()
         }
     }
 
-    private val requestSmsCallsPermissionLauncher = registerForActivityResult(
+    // Chain step 1: Foreground Location → then Background Location → then SMS/Calls
+    private val requestForegroundLocationLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val receiveSmsGranted = permissions[android.Manifest.permission.RECEIVE_SMS] ?: false
-        val readSmsGranted = permissions[android.Manifest.permission.READ_SMS] ?: false
-        val phoneStateGranted = permissions[android.Manifest.permission.READ_PHONE_STATE] ?: false
-        val callLogGranted = permissions[android.Manifest.permission.READ_CALL_LOG] ?: false
-        if (receiveSmsGranted && readSmsGranted && phoneStateGranted && callLogGranted) {
-            Toast.makeText(this, "SMS & Call permissions granted ✓", Toast.LENGTH_SHORT).show()
-            syncStatusNowOnSetup()
+        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            Toast.makeText(this, "Location permission granted ✓", Toast.LENGTH_SHORT).show()
+            // Chain → request background location on Q+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                requestBackgroundLocationLauncher.launch(
+                    arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                )
+            } else {
+                // Pre-Q: no background location needed, go straight to SMS/Calls
+                chainToSmsCallsIfNeeded()
+            }
         } else {
-            Toast.makeText(this, "Some permissions were denied. SMS/Call logs might be partial.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            // Still chain to SMS/Calls even if location denied
+            chainToSmsCallsIfNeeded()
         }
         refreshAllStatuses()
     }
+
+    // BUG-R2-06: POST_NOTIFICATIONS launcher for Android 13+ (chain step 0)
+    private val requestNotificationsLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            Toast.makeText(this, "Notification permission granted ✓", Toast.LENGTH_SHORT).show()
+        }
+        // Chain → request location next
+        chainToLocationIfNeeded()
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,76 +124,30 @@ class SetupActivity : AppCompatActivity() {
 
         setupButtons()
         restoreSavedParentId()
-
-        // Auto request missing permissions sequentially on launch
-        autoRequestPermissionsIfNeeded()
     }
 
     override fun onResume() {
         super.onResume()
         refreshAllStatuses()
 
-        // If app is fully configured, trigger background log synchronization
+        // If app is fully configured, trigger background sync
         if (isParentIdSaved() && isLocationPermissionGranted() && isSmsCallsPermissionGranted()) {
             syncStatusNowOnSetup()
         }
     }
 
-    // ── Setup ──────────────────────────────────────────────────────────────────
+    // ── Setup Buttons ─────────────────────────────────────────────────────────
 
     private fun setupButtons() {
 
-        // Step 1 — Save Parent ID + Firebase Anon Auth for child
+        // Step 1 — Save Parent ID
         binding.btnSaveParentId.setOnClickListener {
             val id = binding.etParentId.text.toString().trim()
             if (id.length >= 4) {
                 binding.btnSaveParentId.isEnabled = false
                 binding.btnSaveParentId.text = "Connecting..."
 
-                // Bypassed Firebase Auth for testing/checking purposes (mandatory login commented out)
-                /*
-                auth.signInAnonymously()
-                    .addOnSuccessListener { result ->
-                        val childUid = result.user?.uid
-                        prefs.parentId = id
-                        prefs.childUid = childUid
-                        Toast.makeText(this, "Connected to Parent ✓", Toast.LENGTH_SHORT).show()
-                        refreshAllStatuses()
-                        binding.btnSaveParentId.isEnabled = true
-                        binding.btnSaveParentId.text = "Save ID"
-
-                        // Reset sync status and sync everything
-                        val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
-                        lifecycleScope.launch {
-                            try {
-                                db.messageDao().resetSyncStatus()
-                            } catch (_: Exception) {}
-                        }
-
-                        syncStatusNowOnSetup()
-
-                        // Trigger immediate sync of messages
-                        val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
-                        lifecycleScope.launch {
-                            try {
-                                repo.syncPending()
-                                Toast.makeText(this@SetupActivity, "Linked to Parent Dashboard ✓", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Toast.makeText(this@SetupActivity, "Sync Error: ${e.message}", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        binding.btnSaveParentId.isEnabled = true
-                        binding.btnSaveParentId.text = "Save ID"
-                        val msg = e.message ?: ""
-                        if (msg.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) || msg.contains("config not found", ignoreCase = true)) {
-                            Toast.makeText(this, "Anonymous Authentication is disabled in the Firebase Console. Please enable it in Firebase -> Build -> Authentication.", Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(this, "Auth failed: ${e.message}", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                */
+                // Bypassed Firebase Auth for testing/checking purposes
                 prefs.parentId = id
                 prefs.childUid = "test_child_uid"
                 Toast.makeText(this, "Connected to Parent ✓", Toast.LENGTH_SHORT).show()
@@ -194,6 +173,11 @@ class SetupActivity : AppCompatActivity() {
                         Toast.makeText(this@SetupActivity, "Sync Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
+
+                // BUG-R2-01 FIX: Immediately start the permission request chain
+                // after saving the parent code — Location → Background → SMS/Calls
+                startPermissionChain()
+
             } else {
                 binding.etParentId.error = "Must be at least 4 chars"
             }
@@ -232,7 +216,7 @@ class SetupActivity : AppCompatActivity() {
             }
         }
 
-        // Step 4 — Request Location Permission (foreground only first — BUG-03 fix)
+        // Step 4 — Request Location Permission (manual fallback)
         binding.btnEnableLocation.setOnClickListener {
             if (isLocationPermissionGranted()) {
                 Toast.makeText(this, "Permission already granted ✓", Toast.LENGTH_SHORT).show()
@@ -257,7 +241,7 @@ class SetupActivity : AppCompatActivity() {
             }
         }
 
-        // Step 6 — SMS & Calls Tracking
+        // Step 6 — SMS & Calls Tracking (manual fallback)
         binding.btnEnableSmsCalls.setOnClickListener {
             if (isSmsCallsPermissionGranted()) {
                 Toast.makeText(this, "Permissions already granted ✓", Toast.LENGTH_SHORT).show()
@@ -273,6 +257,80 @@ class SetupActivity : AppCompatActivity() {
             )
         }
     }
+
+    // ── Permission Chain (BUG-R2-01 fix) ──────────────────────────────────────
+
+    /**
+     * Starts the full sequential permission chain:
+     * POST_NOTIFICATIONS (API 33+) → Location → Background Location → SMS/Calls
+     * Each step chains into the next automatically.
+     */
+    private fun startPermissionChain() {
+        // Step 0: POST_NOTIFICATIONS for API 33+ (BUG-R2-06 fix)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestNotificationsLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        chainToLocationIfNeeded()
+    }
+
+    private fun chainToLocationIfNeeded() {
+        if (!isLocationPermissionGranted()) {
+            requestForegroundLocationLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                   checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestBackgroundLocationLauncher.launch(
+                arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            )
+        } else {
+            chainToSmsCallsIfNeeded()
+        }
+    }
+
+    private fun chainToSmsCallsIfNeeded() {
+        if (!isSmsCallsPermissionGranted()) {
+            requestSmsCallsPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.READ_SMS,
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_CALL_LOG
+                )
+            )
+        } else {
+            onAllPermissionsHandled()
+        }
+    }
+
+    /**
+     * Called when all permission steps in the chain have been handled.
+     * Imports local history and schedules the background SyncWorker.
+     */
+    private fun onAllPermissionsHandled() {
+        refreshAllStatuses()
+        syncStatusNowOnSetup()
+        scheduleSyncWorker() // BUG-R2-05 fix
+    }
+
+    // ── SyncWorker Scheduling (BUG-R2-05 fix) ────────────────────────────────
+
+    private fun scheduleSyncWorker() {
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "GuardianSyncWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun restoreSavedParentId() {
         val saved = prefs.parentId
@@ -378,29 +436,6 @@ class SetupActivity : AppCompatActivity() {
         }
     }
 
-    private fun autoRequestPermissionsIfNeeded() {
-        if (!isParentIdSaved()) return
-
-        if (!isLocationPermissionGranted()) {
-            // BUG-03 fix: Only request foreground location first
-            requestForegroundLocationLauncher.launch(
-                arrayOf(
-                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-        } else if (!isSmsCallsPermissionGranted()) {
-            requestSmsCallsPermissionLauncher.launch(
-                arrayOf(
-                    android.Manifest.permission.RECEIVE_SMS,
-                    android.Manifest.permission.READ_SMS,
-                    android.Manifest.permission.READ_PHONE_STATE,
-                    android.Manifest.permission.READ_CALL_LOG
-                )
-            )
-        }
-    }
-
     // ── Checks ─────────────────────────────────────────────────────────────────
 
     private fun isParentIdSaved(): Boolean {
@@ -427,7 +462,6 @@ class SetupActivity : AppCompatActivity() {
                checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
-    // BUG-21 fix: Use class reference instead of hardcoded string
     private fun isNotificationServiceEnabled(): Boolean {
         val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         val serviceName = "${packageName}/${GuardianNotificationService::class.java.canonicalName}"

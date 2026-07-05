@@ -18,7 +18,10 @@ class PlatformsFragment : Fragment() {
     private var _binding: FragmentPlatformsBinding? = null
     private val binding get() = _binding!!
     
-    private val viewModel: DashboardViewModel by activityViewModels()
+    private val viewModel: DashboardViewModel by activityViewModels {
+        val parentId = requireActivity().intent.getStringExtra("parent_id") ?: "default_parent"
+        DashboardViewModel.Factory(com.device.guardian.service.data.repository.MessageRepository(parentId))
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

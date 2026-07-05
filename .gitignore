@@ -1,10 +1,39 @@
+# Gradle files
+.gradle/
+build/
+app/build/
+
+# Android Studio / IntelliJ files
 *.iml
-.gradle
-/local.properties
-/.idea/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/shelf/
+.idea/caches/
+
+# Generated files
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration file (contains local paths to SDKs)
+local.properties
+
+# Log files
+*.log
+
+# OS files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-/app/build
+Thumbs.db
+
+# Android build outputs & binaries
+*.apk
+*.ap_
+*.dex
+*.class
+*.aar
+*.jar
+!gradle-wrapper.jar
