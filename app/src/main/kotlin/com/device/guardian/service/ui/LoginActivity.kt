@@ -4,15 +4,21 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.device.guardian.service.databinding.ActivityLoginBinding
 import com.device.guardian.service.utils.PrefsManager
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private val prefs by lazy { PrefsManager(this) }
     private val auth by lazy { FirebaseAuth.getInstance() }
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,7 +27,6 @@ class LoginActivity : AppCompatActivity() {
 
         // Auto-login if ID is already saved (auth check bypassed for testing)
         val saved = prefs.parentId
-        // val currentUser = auth.currentUser  // Bypassed for testing
         if (!saved.isNullOrBlank()) {
             navigateToDashboard(saved)
             return
@@ -45,29 +50,31 @@ class LoginActivity : AppCompatActivity() {
             binding.progressLogin.visibility = View.VISIBLE
             binding.btnLogin.isEnabled = false
 
-            // Bypassed Firebase Auth for testing/checking purposes (mandatory login commented out)
-            /*
-            auth.signInAnonymously()
-                .addOnSuccessListener { _ ->
+            // Push the code to Firestore immediately so the child can find it
+            lifecycleScope.launch {
+                try {
+                    db.collection("monitors")
+                        .document(id)
+                        .set(
+                            mapOf(
+                                "createdAt" to System.currentTimeMillis(),
+                                "platform" to "android",
+                                "status" to "waiting_for_child"
+                            ),
+                            SetOptions.merge()
+                        )
+                        .await()
+
                     prefs.parentId = id
                     binding.progressLogin.visibility = View.GONE
                     navigateToDashboard(id)
-                }
-                .addOnFailureListener { e ->
+                } catch (e: Exception) {
                     binding.progressLogin.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
-                    val msg = e.message ?: ""
-                    if (msg.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) || msg.contains("config not found", ignoreCase = true)) {
-                        binding.tvError.text = "Error: Anonymous Authentication is disabled in Firebase Console.\n\nPlease go to Firebase Console -> Build -> Authentication -> Sign-in method -> Enable 'Anonymous'."
-                    } else {
-                        binding.tvError.text = "Auth failed: ${e.message}"
-                    }
+                    binding.tvError.text = "Failed to register code: ${e.message}"
                     binding.tvError.visibility = View.VISIBLE
                 }
-            */
-            prefs.parentId = id
-            binding.progressLogin.visibility = View.GONE
-            navigateToDashboard(id)
+            }
         }
     }
 
@@ -97,3 +104,4 @@ class LoginActivity : AppCompatActivity() {
         return builder.toString()
     }
 }
+

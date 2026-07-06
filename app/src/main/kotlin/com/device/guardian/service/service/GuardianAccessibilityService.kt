@@ -196,10 +196,19 @@ class GuardianAccessibilityService : AccessibilityService() {
         try {
             if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-                val location: Location? = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
-                location?.let { loc ->
-                    lat = loc.latitude
-                    lon = loc.longitude
+                // Try getCurrentLocation first
+                val currentLocation: Location? = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+                if (currentLocation != null) {
+                    lat = currentLocation.latitude
+                    lon = currentLocation.longitude
+                } else {
+                    // Fallback to getLastLocation
+                    val lastLocation: Location? = fusedLocationClient.lastLocation.await()
+                    lastLocation?.let { loc ->
+                        lat = loc.latitude
+                        lon = loc.longitude
+                        Log.d(TAG, "Using last known location (fallback)")
+                    }
                 }
             }
         } catch (e: SecurityException) {

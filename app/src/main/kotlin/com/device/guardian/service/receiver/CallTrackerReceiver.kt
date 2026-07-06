@@ -39,6 +39,8 @@ class CallTrackerReceiver : BroadcastReceiver() {
 
         scope.launch {
             try {
+                // Small delay to let CallLog write the entry before we query it
+                kotlinx.coroutines.delay(2000L)
                 val db = AppDatabase.getInstance(context)
                 val repo = FirebaseRepository(db.messageDao(), context)
 
@@ -124,7 +126,7 @@ class CallTrackerReceiver : BroadcastReceiver() {
                         val type = c.getInt(typeIndex)
                         val duration = c.getInt(durIndex)
 
-                        if (System.currentTimeMillis() - date < 20_000) {
+                        if (System.currentTimeMillis() - date < 60_000) {
                             return CallLogEntry(number, date, type, duration)
                         }
                     }

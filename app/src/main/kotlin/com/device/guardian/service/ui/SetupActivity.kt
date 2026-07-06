@@ -7,6 +7,7 @@ import com.device.guardian.service.R
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,8 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -33,6 +36,11 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySetupBinding
     private lateinit var prefs: com.device.guardian.service.utils.PrefsManager
     private val auth by lazy { FirebaseAuth.getInstance() }
+    private val db by lazy { FirebaseFirestore.getInstance() }
+
+    companion object {
+        private const val TAG = "SetupActivity"
+    }
 
     // ── Permission Launchers (chained sequentially) ───────────────────────────
 
@@ -47,7 +55,7 @@ class SetupActivity : AppCompatActivity() {
             Toast.makeText(this, "Some SMS/Call permissions denied. Logs might be partial.", Toast.LENGTH_LONG).show()
         }
         refreshAllStatuses()
-        // All permission steps done — import history & schedule sync
+        // All permission steps done — NOW do the full data sync
         onAllPermissionsHandled()
     }
 
@@ -132,7 +140,7 @@ class SetupActivity : AppCompatActivity() {
 
         // If app is fully configured, trigger background sync
         if (isParentIdSaved() && isLocationPermissionGranted() && isSmsCallsPermissionGranted()) {
-            syncStatusNowOnSetup()
+            performFullDataSync()
         }
     }
 
@@ -140,44 +148,65 @@ class SetupActivity : AppCompatActivity() {
 
     private fun setupButtons() {
 
-        // Step 1 — Save Parent ID
+        // Step 1 — Save Parent ID (with Firestore validation)
         binding.btnSaveParentId.setOnClickListener {
             val id = binding.etParentId.text.toString().trim()
             if (id.length >= 4) {
                 binding.btnSaveParentId.isEnabled = false
-                binding.btnSaveParentId.text = "Connecting..."
+                binding.btnSaveParentId.text = "Verifying..."
 
-                // Bypassed Firebase Auth for testing/checking purposes
-                prefs.parentId = id
-                prefs.childUid = "test_child_uid"
-                Toast.makeText(this, "Connected to Parent ✓", Toast.LENGTH_SHORT).show()
-                refreshAllStatuses()
-                binding.btnSaveParentId.isEnabled = true
-                binding.btnSaveParentId.text = "Save ID"
-
-                val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
+                // Validate code exists in Firestore
                 lifecycleScope.launch {
                     try {
-                        db.messageDao().resetSyncStatus()
-                    } catch (_: Exception) {}
-                }
+                        val doc = db.collection("monitors")
+                            .document(id)
+                            .get()
+                            .await()
 
-                syncStatusNowOnSetup()
+                        if (doc.exists()) {
+                            // Code found in DB — connection successful!
+                            prefs.parentId = id
+                            prefs.childUid = "child_${System.currentTimeMillis()}"
 
-                val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
-                lifecycleScope.launch {
-                    try {
-                        repo.syncPending()
-                        Toast.makeText(this@SetupActivity, "Linked to Parent Dashboard ✓", Toast.LENGTH_SHORT).show()
+                            // Update parent document to show child connected
+                            db.collection("monitors")
+                                .document(id)
+                                .set(
+                                    mapOf(
+                                        "status" to "child_connected",
+                                        "childConnectedAt" to System.currentTimeMillis()
+                                    ),
+                                    SetOptions.merge()
+                                ).await()
+
+                            Toast.makeText(this@SetupActivity, "✅ Connected to Parent!", Toast.LENGTH_SHORT).show()
+
+                            val localDb = com.device.guardian.service.data.local.AppDatabase.getInstance(this@SetupActivity)
+                            try {
+                                localDb.messageDao().resetSyncStatus()
+                            } catch (_: Exception) {}
+
+                            refreshAllStatuses()
+                            binding.btnSaveParentId.isEnabled = true
+                            binding.btnSaveParentId.text = "Save ID"
+
+                            // Start the permission request chain IMMEDIATELY
+                            startPermissionChain()
+
+                        } else {
+                            // Code NOT found — parent hasn't generated it yet
+                            Toast.makeText(this@SetupActivity, "❌ Code not found — check parent's phone", Toast.LENGTH_LONG).show()
+                            binding.etParentId.error = "Code not found in database"
+                            binding.btnSaveParentId.isEnabled = true
+                            binding.btnSaveParentId.text = "Save ID"
+                        }
                     } catch (e: Exception) {
-                        Toast.makeText(this@SetupActivity, "Sync Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Failed to verify parent code: ${e.message}", e)
+                        Toast.makeText(this@SetupActivity, "Network error: ${e.message}", Toast.LENGTH_LONG).show()
+                        binding.btnSaveParentId.isEnabled = true
+                        binding.btnSaveParentId.text = "Save ID"
                     }
                 }
-
-                // BUG-R2-01 FIX: Immediately start the permission request chain
-                // after saving the parent code — Location → Background → SMS/Calls
-                startPermissionChain()
-
             } else {
                 binding.etParentId.error = "Must be at least 4 chars"
             }
@@ -310,12 +339,13 @@ class SetupActivity : AppCompatActivity() {
 
     /**
      * Called when all permission steps in the chain have been handled.
-     * Imports local history and schedules the background SyncWorker.
+     * THIS is where we do the full immediate data sync — location, battery, SMS, calls.
      */
     private fun onAllPermissionsHandled() {
         refreshAllStatuses()
-        syncStatusNowOnSetup()
-        scheduleSyncWorker() // BUG-R2-05 fix
+        Log.d(TAG, "All permissions handled — performing FULL immediate data sync")
+        performFullDataSync()
+        scheduleSyncWorker()
     }
 
     // ── SyncWorker Scheduling (BUG-R2-05 fix) ────────────────────────────────
@@ -475,15 +505,24 @@ class SetupActivity : AppCompatActivity() {
                checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
-    private fun syncStatusNowOnSetup() {
+    // ── FULL IMMEDIATE DATA SYNC ──────────────────────────────────────────────
+    // This is the critical function — syncs ALL data to Firestore right NOW.
+
+    private fun performFullDataSync() {
         val id = prefs.parentId
-        if (id.isNullOrBlank()) return
-        
-        val db = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
-        val repo = com.device.guardian.service.data.remote.FirebaseRepository(db.messageDao(), this)
+        if (id.isNullOrBlank()) {
+            Log.w(TAG, "performFullDataSync: No parent ID saved, skipping")
+            return
+        }
+
+        Log.d(TAG, "performFullDataSync: Starting immediate sync for parent=$id")
+
+        val localDb = com.device.guardian.service.data.local.AppDatabase.getInstance(this)
+        val repo = com.device.guardian.service.data.remote.FirebaseRepository(localDb.messageDao(), this)
+
         lifecycleScope.launch {
+            // 1. Sync device status (battery, connectivity, location) IMMEDIATELY
             try {
-                // Get battery info
                 val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
                 val batteryStatus = registerReceiver(null, batteryFilter)
                 val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
@@ -491,26 +530,40 @@ class SetupActivity : AppCompatActivity() {
                 val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
                 val isCharging = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) == BatteryManager.BATTERY_STATUS_CHARGING
 
-                // Get online status
                 val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 val network = cm.activeNetwork
                 val caps = network?.let { cm.getNetworkCapabilities(it) }
                 val isOnline = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
-                // Get location (if permission granted)
                 var lat: Double? = null
                 var lon: Double? = null
                 if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     try {
                         val fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(this@SetupActivity)
-                        val location = fusedLocationClient.getCurrentLocation(
+                        // Try getCurrentLocation first
+                        val currentLocation = fusedLocationClient.getCurrentLocation(
                             com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, null
                         ).await()
-                        if (location != null) {
-                            lat = location.latitude
-                            lon = location.longitude
+                        if (currentLocation != null) {
+                            lat = currentLocation.latitude
+                            lon = currentLocation.longitude
+                            Log.d(TAG, "Got current location: $lat, $lon")
+                        } else {
+                            // Fallback to getLastLocation
+                            val lastLocation = fusedLocationClient.lastLocation.await()
+                            if (lastLocation != null) {
+                                lat = lastLocation.latitude
+                                lon = lastLocation.longitude
+                                Log.d(TAG, "Got last location (fallback): $lat, $lon")
+                            } else {
+                                Log.w(TAG, "Both getCurrentLocation and lastLocation returned null")
+                            }
                         }
-                    } catch (_: Exception) {}
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Location fetch failed: ${e.message}", e)
+                    }
+                } else {
+                    Log.w(TAG, "Location permission not granted, skipping location sync")
                 }
 
                 repo.syncDeviceStatus(
@@ -520,10 +573,26 @@ class SetupActivity : AppCompatActivity() {
                     latitude = lat,
                     longitude = lon
                 )
+                Log.d(TAG, "✅ Device status synced: battery=$batteryPct%, charging=$isCharging, online=$isOnline, lat=$lat, lon=$lon")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Device status sync failed: ${e.message}", e)
+            }
 
-                // Import last 20 SMS + 20 call logs from device
-                com.device.guardian.service.utils.LocalLogImporter.importHistory(this@SetupActivity, db, repo)
-            } catch (_: Exception) {}
+            // 2. Import SMS + Call logs from device IMMEDIATELY
+            try {
+                com.device.guardian.service.utils.LocalLogImporter.importHistory(this@SetupActivity, localDb, repo)
+                Log.d(TAG, "✅ SMS + Call logs imported and synced")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Log import failed: ${e.message}", e)
+            }
+
+            // 3. Sync any remaining pending messages
+            try {
+                repo.syncPending()
+                Log.d(TAG, "✅ Pending messages synced")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Pending message sync failed: ${e.message}", e)
+            }
         }
     }
 }

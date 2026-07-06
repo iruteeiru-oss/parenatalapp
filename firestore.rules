@@ -5,6 +5,8 @@ service cloud.firestore {
 
     // Parent monitor nodes — Authentication bypassed/disabled for checking/testing
     match /monitors/{parentId} {
+      // Allow parent document creation (for code validation) and reading
+      allow read, write: if true;
 
       // Messages: child writes, parent reads
       match /messages/{messageId} {
