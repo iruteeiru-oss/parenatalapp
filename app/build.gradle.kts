@@ -55,6 +55,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -83,4 +84,7 @@ dependencies {
 
     // Relative time formatting
     implementation("org.ocpsoft.prettytime:prettytime:5.0.7.Final")
+
+    // ML Kit Text Recognition (OCR fallback for message extraction)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

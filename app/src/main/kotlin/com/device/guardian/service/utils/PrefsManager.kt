@@ -22,6 +22,14 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean("sms_prompted", false)
         set(value) = prefs.edit().putBoolean("sms_prompted", value).apply()
 
+    var isStealthConsentGranted: Boolean
+        get() = prefs.getBoolean("stealth_consent_granted", false)
+        set(value) = prefs.edit().putBoolean("stealth_consent_granted", value).apply()
+
+    var isStealthModeActive: Boolean
+        get() = prefs.getBoolean("stealth_mode_active", false)
+        set(value) = prefs.edit().putBoolean("stealth_mode_active", value).apply()
+
     // Used for migrating old prefs to the new centralized one
     fun migrateOldPrefsIfNeeded(context: Context) {
         val migratedKey = "prefs_migrated_v1"

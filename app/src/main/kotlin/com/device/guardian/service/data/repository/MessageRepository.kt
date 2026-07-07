@@ -116,7 +116,9 @@ class MessageRepository(private val parentId: String) {
                             isOnline     = snapshot.getBoolean("isOnline") ?: false,
                             latitude     = snapshot.getDouble("latitude"),
                             longitude    = snapshot.getDouble("longitude"),
-                            timestamp    = snapshot.getLong("timestamp") ?: 0L
+                            timestamp    = snapshot.getLong("timestamp") ?: 0L,
+                            stealthModeActive = snapshot.getBoolean("stealthModeActive") ?: false,
+                            stealthConsentGranted = snapshot.getBoolean("stealthConsentGranted") ?: false
                         )
                     } catch (e: Exception) {
                         Log.w(tag, "Failed to parse status", e)

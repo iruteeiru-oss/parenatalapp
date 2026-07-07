@@ -49,23 +49,25 @@ class DashboardActivity : AppCompatActivity() {
     // BUG-17 fix: Use constructor fragments instead of Fragment.instantiate()
     private fun setupTabs() {
         val pagerAdapter = object : FragmentStateAdapter(this) {
-            override fun getItemCount() = 2
+            override fun getItemCount() = 3
             override fun createFragment(position: Int): Fragment = when (position) {
                 0 -> MessagesFragment()
                 1 -> AlertsFragment()
+                2 -> com.device.guardian.service.ui.fragment.MediaFragment()
                 else -> MessagesFragment()
             }
         }
 
         binding.viewPager.apply {
             adapter = pagerAdapter
-            offscreenPageLimit = 1
+            offscreenPageLimit = 2
         }
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
             tab.text = when (position) {
                 0 -> "Messages"
                 1 -> "Alerts"
+                2 -> "Media"
                 else -> ""
             }
         }.attach()
@@ -134,6 +136,19 @@ class DashboardActivity : AppCompatActivity() {
                     val batteryVal = if (status.batteryLevel >= 0) "${status.batteryLevel}%" else "--"
                     binding.tvStatusBattery.text = "🔋 $batteryVal$chargingText"
 
+                    // 2b. Stealth Mode Status
+                    binding.tvStatusStealth.visibility = View.VISIBLE
+                    if (status.stealthModeActive) {
+                        binding.tvStatusStealth.text = "🕵️ Stealth Active"
+                        binding.tvStatusStealth.setTextColor(getColor(R.color.status_success))
+                    } else if (status.stealthConsentGranted) {
+                        binding.tvStatusStealth.text = "🕵️ Disabled"
+                        binding.tvStatusStealth.setTextColor(getColor(R.color.accent_blue))
+                    } else {
+                        binding.tvStatusStealth.text = "🕵️ No Consent"
+                        binding.tvStatusStealth.setTextColor(getColor(R.color.status_error))
+                    }
+
                     // 3. Last Known Coordinates Button
                     val lat = status.latitude
                     val lon = status.longitude
@@ -157,6 +172,7 @@ class DashboardActivity : AppCompatActivity() {
                     binding.tvStatusNetwork.text = "📶 --"
                     binding.tvStatusNetwork.setTextColor(getColor(R.color.text_secondary))
                     binding.tvStatusBattery.text = "🔋 --"
+                    binding.tvStatusStealth.visibility = View.GONE
                     binding.btnShowLocation.visibility = View.GONE
                 }
             }

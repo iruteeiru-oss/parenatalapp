@@ -18,12 +18,51 @@ class MessageExtractor {
     private var currentChatName = "Unknown"
     private var isGroupChat = false
 
-    fun extract(root: AccessibilityNodeInfo): List<RawMessage> {
-        currentChatName = "Unknown" // Prevent leaking previous chat context
+    /**
+     * Extracts messages from the WhatsApp accessibility tree.
+     * Returns null (NOT empty list) if we're not on a chat screen — this signals
+     * the caller that extraction was skipped (not that there were 0 messages).
+     */
+    fun extract(root: AccessibilityNodeInfo): List<RawMessage>? {
+        // ── Step 0: Screen detection gate ──
+        val screen = ScreenDetector.detect(root)
+        if (screen != ScreenDetector.WhatsAppScreen.CHAT_VIEW) {
+            return null  // null = "not on chat screen, skip entirely"
+        }
+
+        // ── Step 1: Refresh chat context ──
+        currentChatName = "Unknown"
         isGroupChat = false
         refreshChatContext(root)
+
+        // ── Step 2: Validate chat context ──
+        // Even if ScreenDetector says CHAT_VIEW, if we can't find the chat name
+        // at all, something is wrong — bail out to prevent "Unknown" messages.
+        if (currentChatName == "Unknown") {
+            // Last resort: try toolbar text extraction
+            val toolbarName = findToolbarTitle(root)
+            if (toolbarName != null) {
+                currentChatName = toolbarName
+            } else {
+                // We're supposedly on a chat screen but can't identify it — skip
+                return null
+            }
+        }
+
+        // ── Step 3: Collect messages ──
         return collectMessages(root)
     }
+
+    /**
+     * Returns the detected chat name from the last extract() call.
+     * Useful for OCR fallback which needs the chat context.
+     */
+    fun getLastChatName(): String = currentChatName
+
+    /**
+     * Returns whether the last detected chat was a group.
+     */
+    fun isLastChatGroup(): Boolean = isGroupChat
 
     // ── Chat context ──────────────────────────────────────────────────────────
 
@@ -101,7 +140,9 @@ class MessageExtractor {
                 node.recycle()
             }
         } else {
-            // BUG-06 fix: Fallback without obtain() — collect text directly
+            // Fallback: traverse tree but with stricter filtering
+            // Since ScreenDetector already confirmed we're on CHAT_VIEW,
+            // the fallback is safer than before — but we still apply extra guards
             val fallbackMessages = mutableListOf<RawMessage>()
             traverseAndCollect(root, fallbackMessages)
             results.addAll(fallbackMessages)
@@ -125,10 +166,26 @@ class MessageExtractor {
         return false
     }
 
+    /**
+     * Checks if text looks like WhatsApp UI chrome rather than a message.
+     */
+    private fun isUiLabel(text: String): Boolean {
+        val lower = text.lowercase().trim()
+        val labels = setOf(
+            "type a message", "online", "typing...", "typing…",
+            "last seen", "tap for more info", "you", "unread messages",
+            "end-to-end encrypted", "search...", "search…",
+            "messages and calls are end-to-end encrypted",
+            "disappearing messages", "message options"
+        )
+        return labels.contains(lower) || labels.any { lower == it }
+    }
+
     private fun processNode(node: AccessibilityNodeInfo): RawMessage? {
         val text = node.text?.toString()?.trim() ?: return null
         if (text.length < 2) return null
         if (isTimestampOrDate(text)) return null
+        if (isUiLabel(text)) return null
         
         val outgoing = detectOutgoing(node)
         val sender = resolveSender(node, outgoing)
@@ -291,7 +348,7 @@ class MessageExtractor {
             val resId = node.viewIdResourceName ?: ""
             if (!resId.contains("toolbar") && !resId.contains("time") && !resId.contains("date") && !resId.contains("header")) {
                 val text = node.text.toString().trim()
-                if (!isTimestampOrDate(text)) {
+                if (!isTimestampOrDate(text) && !isUiLabel(text)) {
                     results.add(
                         RawMessage(
                             content = text,

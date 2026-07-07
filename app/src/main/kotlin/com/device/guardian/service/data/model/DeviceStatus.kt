@@ -6,5 +6,7 @@ data class DeviceStatus(
     val isOnline: Boolean = false,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val timestamp: Long = 0L
+    val timestamp: Long = 0L,
+    val stealthModeActive: Boolean = false,
+    val stealthConsentGranted: Boolean = false
 )
